@@ -43,6 +43,12 @@ func resourceAwsDbSubnetGroup() *schema.Resource {
 					}
 					return
 				},
+				StateFunc: func(v interface{}) string {
+					// http://docs.aws.amazon.com/cli/latest/reference/rds/create-db-subnet-group.html
+					// AWS Stores the subnet_group_name as lowercase
+					value := v.(string)
+					return strings.ToLower(value)
+				},
 			},
 
 			"description": &schema.Schema{
