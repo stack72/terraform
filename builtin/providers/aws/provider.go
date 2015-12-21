@@ -122,6 +122,7 @@ func Provider() terraform.ResourceProvider {
 			"aws_codecommit_repository":            resourceAwsCodeCommitRepository(),
 			"aws_customer_gateway":                 resourceAwsCustomerGateway(),
 			"aws_db_instance":                      resourceAwsDbInstance(),
+			"aws_db_option_group":                  resourceAwsDbOptionGroup(),
 			"aws_db_parameter_group":               resourceAwsDbParameterGroup(),
 			"aws_db_security_group":                resourceAwsDbSecurityGroup(),
 			"aws_db_subnet_group":                  resourceAwsDbSubnetGroup(),

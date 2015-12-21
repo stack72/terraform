@@ -256,6 +256,34 @@ func expandRedshiftParameters(configured []interface{}) ([]*redshift.Parameter, 
 	return parameters, nil
 }
 
+func expandOptionConfiguration(configured []interface{}) ([]*rds.OptionConfiguration, error) {
+	var option []*rds.OptionConfiguration
+
+	for _, pRaw := range configured {
+		data := pRaw.(map[string]interface{})
+
+		o := &rds.OptionConfiguration{
+			OptionName: aws.String(data["option_name"].(string)),
+		}
+
+		if raw, ok := data["port"]; ok {
+			o.Port = aws.Int64(int64(raw.(int)))
+		}
+
+		if raw, ok := data["db_security_group_memberships"]; ok {
+			o.DBSecurityGroupMemberships = expandStringList(raw.(*schema.Set).List())
+		}
+
+		if raw, ok := data["vpc_security_group_memberships"]; ok {
+			o.VpcSecurityGroupMemberships = expandStringList(raw.(*schema.Set).List())
+		}
+
+		option = append(option, o)
+	}
+
+	return option, nil
+}
+
 // Takes the result of flatmap.Expand for an array of parameters and
 // returns Parameter API compatible objects
 func expandElastiCacheParameters(configured []interface{}) ([]*elasticache.ParameterNameValue, error) {

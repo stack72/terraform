@@ -270,6 +270,12 @@ func resourceAwsDbInstance() *schema.Resource {
 				Optional: true,
 			},
 
+			"option_group_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+
 			"tags": tagsSchema(),
 		},
 	}
@@ -309,6 +315,10 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 
 		if attr, ok := d.GetOk("db_subnet_group_name"); ok {
 			opts.DBSubnetGroupName = aws.String(attr.(string))
+		}
+
+		if attr, ok := d.GetOk("option_group_name"); ok {
+			opts.OptionGroupName = aws.String(attr.(string))
 		}
 
 		log.Printf("[DEBUG] DB Instance Replica create configuration: %#v", opts)
@@ -357,6 +367,10 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 			opts.Port = aws.Int64(int64(attr.(int)))
 		}
 
+		if attr, ok := d.GetOk("storage_type"); ok {
+			opts.StorageType = aws.String(attr.(string))
+		}
+
 		if attr, ok := d.GetOk("publicly_accessible"); ok {
 			opts.PubliclyAccessible = aws.Bool(attr.(bool))
 		}
@@ -365,8 +379,8 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 			opts.TdeCredentialArn = aws.String(attr.(string))
 		}
 
-		if attr, ok := d.GetOk("storage_type"); ok {
-			opts.StorageType = aws.String(attr.(string))
+		if attr, ok := d.GetOk("option_group_name"); ok {
+			opts.OptionGroupName = aws.String(attr.(string))
 		}
 
 		_, err := conn.RestoreDBInstanceFromDBSnapshot(&opts)
@@ -494,6 +508,10 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 			opts.PubliclyAccessible = aws.Bool(attr.(bool))
 		}
 
+		if attr, ok := d.GetOk("option_group_name"); ok {
+			opts.OptionGroupName = aws.String(attr.(string))
+		}
+
 		log.Printf("[DEBUG] DB Instance create configuration: %#v", opts)
 		var err error
 		_, err = conn.CreateDBInstance(&opts)
@@ -574,6 +592,9 @@ func resourceAwsDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("status", v.DBInstanceStatus)
 	d.Set("storage_encrypted", v.StorageEncrypted)
+	if v.OptionGroupMemberships != nil {
+		d.Set("option_group_name", v.OptionGroupMemberships[0].OptionGroupName)
+	}
 
 	// list tags for resource
 	// set tags
@@ -783,6 +804,12 @@ func resourceAwsDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error
 			}
 			req.DBSecurityGroups = s
 		}
+		requestUpdate = true
+	}
+
+	if d.HasChange("option_group_name") {
+		d.SetPartial("option_group_name")
+		req.OptionGroupName = aws.String(d.Get("option_group_name").(string))
 		requestUpdate = true
 	}
 
