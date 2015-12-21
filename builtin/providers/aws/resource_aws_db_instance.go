@@ -341,6 +341,10 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 			opts.MonitoringInterval = aws.Int64(int64(attr.(int)))
 		}
 
+		if attr, ok := d.GetOk("option_group_name"); ok {
+			opts.OptionGroupName = aws.String(attr.(string))
+		}
+
 		log.Printf("[DEBUG] DB Instance Replica create configuration: %#v", opts)
 		_, err := conn.CreateDBInstanceReadReplica(&opts)
 		if err != nil {
@@ -378,10 +382,6 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 
 		if attr, ok := d.GetOk("multi_az"); ok {
 			opts.MultiAZ = aws.Bool(attr.(bool))
-		}
-
-		if attr, ok := d.GetOk("option_group_name"); ok {
-			opts.OptionGroupName = aws.String(attr.(string))
 		}
 
 		if attr, ok := d.GetOk("port"); ok {
@@ -548,6 +548,10 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 
 		if attr, ok := d.GetOk("monitoring_interval"); ok {
 			opts.MonitoringInterval = aws.Int64(int64(attr.(int)))
+		}
+
+		if attr, ok := d.GetOk("option_group_name"); ok {
+			opts.OptionGroupName = aws.String(attr.(string))
 		}
 
 		log.Printf("[DEBUG] DB Instance create configuration: %#v", opts)
