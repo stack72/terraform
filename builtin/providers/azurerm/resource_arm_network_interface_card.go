@@ -237,7 +237,7 @@ func resourceArmNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) e
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("Error making Read request on Azure Netowkr Interface %s: %s", name, err)
+		return fmt.Errorf("Error making Read request on Azure Netwokr Interface %s: %s", name, err)
 	}
 
 	iface := *resp.Properties
