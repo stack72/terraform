@@ -402,7 +402,7 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 			stateConf := &resource.StateChangeConf{
 				Pending: []string{"creating", "backing-up", "modifying", "resetting-master-credentials",
 					"maintenance", "renaming", "rebooting", "upgrading"},
-				Target:     "available",
+				Target:     []string{"available"},
 				Refresh:    resourceAwsDbInstanceStateRefreshFunc(d, meta),
 				Timeout:    40 * time.Minute,
 				MinTimeout: 10 * time.Second,
@@ -530,7 +530,7 @@ func resourceAwsDbInstanceCreate(d *schema.ResourceData, meta interface{}) error
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"creating", "backing-up", "modifying", "resetting-master-credentials",
 			"maintenance", "renaming", "rebooting", "upgrading"},
-		Target:     "available",
+		Target:     []string{"available"},
 		Refresh:    resourceAwsDbInstanceStateRefreshFunc(d, meta),
 		Timeout:    40 * time.Minute,
 		MinTimeout: 10 * time.Second,
@@ -684,7 +684,7 @@ func resourceAwsDbInstanceDelete(d *schema.ResourceData, meta interface{}) error
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"creating", "backing-up",
 			"modifying", "deleting", "available"},
-		Target:     "",
+		Target:     []string{},
 		Refresh:    resourceAwsDbInstanceStateRefreshFunc(d, meta),
 		Timeout:    40 * time.Minute,
 		MinTimeout: 10 * time.Second,
