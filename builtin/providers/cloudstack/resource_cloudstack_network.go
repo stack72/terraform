@@ -201,7 +201,6 @@ func resourceCloudStackNetworkRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("display_text", n.Displaytext)
 	d.Set("cidr", n.Cidr)
 	d.Set("gateway", n.Gateway)
-	d.Set("vlan", n.Vlan)
 
 	// Read the tags and sort them on a map
 	tags := make(map[string]string)
