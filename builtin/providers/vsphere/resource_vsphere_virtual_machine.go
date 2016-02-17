@@ -943,7 +943,7 @@ func (vm *virtualMachine) createVirtualMachine(c *govmomi.Client) error {
 
 			if d.Type == "StoragePod" {
 				sp := object.StoragePod{
-					object.NewFolder(c.Client, d),
+					Folder: object.NewFolder(c.Client, d),
 				}
 				sps := buildStoragePlacementSpecCreate(dcFolders, resourcePool, sp, configSpec)
 				datastore, err = findDatastore(c, sps)
@@ -1075,7 +1075,7 @@ func (vm *virtualMachine) deployVirtualMachine(c *govmomi.Client) error {
 
 			if d.Type == "StoragePod" {
 				sp := object.StoragePod{
-					object.NewFolder(c.Client, d),
+					Folder: object.NewFolder(c.Client, d),
 				}
 				sps := buildStoragePlacementSpecClone(c, dcFolders, template, resourcePool, sp)
 
