@@ -1,5 +1,9 @@
 ## 0.6.12 (Unreleased)
 
+BACKWARDS INCOMPATIBILITIES / NOTES:
+
+  * The `publicly_accessible` attribute on `aws_redshift_cluster` resources now defaults to true
+
 FEATURES:
 
   * **New command:** `validate` to perform syntax validation [GH-3783]
@@ -57,6 +61,7 @@ BUG FIXES:
   * provider/aws: Fix reading auto scaling group availability zones [GH-5044]
   * provider/google: Fix backend service max_utilization attribute [GH-4895]
   * provider/aws: Fix reading auto scaling group load balancers [GH-5045]
+  * provider/aws: Fix `aws_redshift_cluster` to allow `publicly_accessible` to be false [GH-5262]
   * provider/cloudflare: `ttl` no longer shows a change on each plan on `cloudflare_record` resources [GH-5042]
   * provider/docker: Fix the default docker_host value [GH-5088]
   * provider/google: Fix backend service max_utilization attribute [GH-5075]
