@@ -12,20 +12,20 @@ Provides an RDS DB option group resource.
 
 ```
 resource "aws_db_option_group" "bar" {
-	option_group_name = "option-group-test-terraform"
-	option_group_description = "Terraform Option Group"
-	engine_name = "sqlserver-ee"
-	major_engine_version = "11.00"
+  option_group_name        = "option-group-test-terraform"
+  option_group_description = "Terraform Option Group"
+  engine_name              = "sqlserver-ee"
+  major_engine_version     = "11.00"
 
-	option {
-		option_name = "mirroring"
-	}
+  option {
+    option_name = "mirroring"
+  }
 
-	option {
-		option_name = "TDE"
-	}
-	
-	apply_immediately = true
+  option {
+    option_name = "TDE"
+  }
+
+  apply_immediately = true
 }
 ```
 
@@ -33,11 +33,11 @@ resource "aws_db_option_group" "bar" {
 
 The following arguments are supported:
 
-* `option_group_name` - (Required) The name of the Option group to be created.
-* `option_group_description` - (Required) The description of the option group.
+* `name` - (Required) The name of the Option group to be created.
+* `description` - (Required) The description of the option group.
 * `engine_name` - (Required) Specifies the name of the engine that this option group should be associated with..
 * `major_engine_version` - (Required) Specifies the major version of the engine that this option group should be associated with.
-* `parameter` - (Optional) A list of Options to apply.
+* `option` - (Optional) A list of Options to apply.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 Parameter blocks support the following:

@@ -41,7 +41,7 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"option_group_description": &schema.Schema{
+			"description": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -93,7 +93,7 @@ func resourceAwsDbOptionGroupCreate(d *schema.ResourceData, meta interface{}) er
 	createOpts := &rds.CreateOptionGroupInput{
 		EngineName:             aws.String(d.Get("engine_name").(string)),
 		MajorEngineVersion:     aws.String(d.Get("major_engine_version").(string)),
-		OptionGroupDescription: aws.String(d.Get("option_group_description").(string)),
+		OptionGroupDescription: aws.String(d.Get("description").(string)),
 		OptionGroupName:        aws.String(d.Get("name").(string)),
 		Tags:                   tags,
 	}
@@ -131,19 +131,20 @@ func resourceAwsDbOptionGroupRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if option == nil {
-		return fmt.Errorf("Unable to find Option Group: %#v", options.OptionGroupsList)
+		log.Printf("Unable to find Option Group: %#v", options.OptionGroupsList)
+		d.SetId("")
+		return nil
 	}
 
-	d.Set("major_engine_version", options.OptionGroupsList[0].MajorEngineVersion)
-	d.Set("engine_name", options.OptionGroupsList[0].EngineName)
-	d.Set("option_group_description", options.OptionGroupsList[0].OptionGroupDescription)
+	d.Set("major_engine_version", option.MajorEngineVersion)
+	d.Set("engine_name", option.EngineName)
+	d.Set("description", option.OptionGroupDescription)
 
-	optionGroup := options.OptionGroupsList[0]
 	arn, err := buildRDSOptionGroupARN(d, meta)
 	if err != nil {
 		name := "<empty>"
-		if optionGroup.OptionGroupName != nil && *optionGroup.OptionGroupName != "" {
-			name = *optionGroup.OptionGroupName
+		if option.OptionGroupName != nil && *option.OptionGroupName != "" {
+			name = *option.OptionGroupName
 		}
 		log.Printf("[DEBUG] Error building ARN for DB Option Group, not setting Tags for Option Group %s", name)
 	} else {

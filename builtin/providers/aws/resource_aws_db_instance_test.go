@@ -420,21 +420,11 @@ resource "aws_db_instance" "bar" {
 
 	allocated_storage = 10
 	engine = "MySQL"
-	engine_version = "5.6.21"
 	instance_class = "db.m1.small"
 	name = "baz"
 	password = "barbarbarbar"
 	username = "foo"
 
-
-	# Maintenance Window is stored in lower case in the API, though not strictly
-	# documented. Terraform will downcase this to match (as opposed to throw a
-	# validation error).
-	maintenance_window = "Fri:09:00-Fri:09:30"
-
-	backup_retention_period = 0
-
-	parameter_group_name = "default.mysql5.6"
 	option_group_name = "${aws_db_option_group.bar.option_group_name}"
 }`, rand.New(rand.NewSource(time.Now().UnixNano())).Int())
 
