@@ -46,7 +46,6 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-
 			"option": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -56,23 +55,39 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-
+						"option_settings": &schema.Schema{
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": &schema.Schema{
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"value": &schema.Schema{
+										Type:     schema.TypeString,
+										Required: true,
+									},
+								},
+							},
+						},
+						"apply_immediately": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"port": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
-							Computed: true,
 						},
 						"db_security_group_memberships": &schema.Schema{
 							Type:     schema.TypeSet,
 							Optional: true,
-							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
 						"vpc_security_group_memberships": &schema.Schema{
 							Type:     schema.TypeSet,
 							Optional: true,
-							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
@@ -139,6 +154,7 @@ func resourceAwsDbOptionGroupRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("major_engine_version", option.MajorEngineVersion)
 	d.Set("engine_name", option.EngineName)
 	d.Set("description", option.OptionGroupDescription)
+	d.Set("option", flattenOptions(option.Options))
 
 	arn, err := buildRDSOptionGroupARN(d, meta)
 	if err != nil {

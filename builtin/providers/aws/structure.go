@@ -258,6 +258,20 @@ func expandRedshiftParameters(configured []interface{}) ([]*redshift.Parameter, 
 	return parameters, nil
 }
 
+func expandOptionSetting(list []interface{}) []*rds.OptionSetting {
+	options := make([]*rds.OptionSetting, 0, len(list))
+	for _, oRaw := range list {
+		data := oRaw.(map[string]interface{})
+		o := &rds.OptionSetting{
+			Name:  aws.String(data["name"].(string)),
+			Value: aws.String(data["value"].(string)),
+		}
+
+		options = append(options, o)
+	}
+	return options
+}
+
 func expandOptionConfiguration(configured []interface{}) ([]*rds.OptionConfiguration, error) {
 	var option []*rds.OptionConfiguration
 
@@ -269,7 +283,13 @@ func expandOptionConfiguration(configured []interface{}) ([]*rds.OptionConfigura
 		}
 
 		if raw, ok := data["port"]; ok {
-			o.Port = aws.Int64(int64(raw.(int)))
+			if int64(raw.(int)) > 0 {
+				o.Port = aws.Int64(int64(raw.(int)))
+			}
+		}
+
+		if raw, ok := data["option_settings"]; ok {
+			o.OptionSettings = expandOptionSetting(raw.(*schema.Set).List())
 		}
 
 		if raw, ok := data["db_security_group_memberships"]; ok {
@@ -460,6 +480,36 @@ func flattenParameters(list []*rds.Parameter) []map[string]interface{} {
 			if i.ParameterValue != nil {
 				r["value"] = strings.ToLower(*i.ParameterValue)
 			}
+			result = append(result, r)
+		}
+	}
+	return result
+}
+
+// Flattens an array of Options into a []map[string]interface{}
+func flattenOptions(list []*rds.Option) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+	for _, i := range list {
+		if i.OptionName != nil {
+
+			r := make(map[string]interface{})
+			r["option_name"] = *i.OptionName
+			if i.Port != nil {
+				r["port"] = *i.Port
+			}
+
+			// r["db_security_group_memberships"] = i.DBSecurityGroupMemberships
+			// r["vpc_security_group_memberships"] = i.VpcSecurityGroupMemberships
+
+			settings := make([]map[string]interface{}, 0, len(i.OptionSettings))
+			for _, j := range i.OptionSettings {
+				settings = append(settings, map[string]interface{}{
+					"name":  *j.Name,
+					"value": *j.Value,
+				})
+			}
+			r["option_settings"] = settings
+
 			result = append(result, r)
 		}
 	}
