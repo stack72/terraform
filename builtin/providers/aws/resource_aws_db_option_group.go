@@ -63,10 +63,12 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 									"name": &schema.Schema{
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 									"value": &schema.Schema{
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 								},
 							},
@@ -185,6 +187,7 @@ func resourceAwsDbOptionGroupRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAwsDbOptionGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	rdsconn := meta.(*AWSClient).rdsconn
+
 	if d.HasChange("option") {
 		o, n := d.GetChange("option")
 		if o == nil {
@@ -268,6 +271,12 @@ func resourceAwsDbOptionHash(v interface{}) int {
 	m := v.(map[string]interface{})
 	buf.WriteString(fmt.Sprintf("%s-", m["option_name"].(string)))
 	buf.WriteString(fmt.Sprintf("%d-", m["port"].(int)))
+
+	for _, oRaw := range m["option_settings"].(*schema.Set).List() {
+		o := oRaw.(map[string]interface{})
+		buf.WriteString(fmt.Sprintf("%s-", o["name"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", o["value"].(string)))
+	}
 
 	return hashcode.String(buf.String())
 }
