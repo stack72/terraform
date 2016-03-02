@@ -18,7 +18,11 @@ resource "aws_db_option_group" "bar" {
   major_engine_version     = "11.00"
 
   option {
-    option_name = "mirroring"
+    option_name = "Timezone"
+    option_settings {
+      name = "TIME_ZONE"
+      value = "UTC"
+    }
   }
 
   option {
@@ -40,12 +44,17 @@ The following arguments are supported:
 * `option` - (Optional) A list of Options to apply.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-Parameter blocks support the following:
+Option blocks support the following:
 
 * `option_name` - (Required) The Name of the Option (e.g. MEMCACHED).
 * `port` - (Optional) The Port number when connecting to the Option (e.g. 11211).
+* `option_settings` - (Optional) A list of option settings to apply.
 * `db_security_group_memberships` - (Optional) A list of DB Security Groups for which the option is enabled.
 * `vpc_security_group_memberships` - (Optional) A list of VPC Security Groups for which the option is enabled.
+
+Option Settings blocks support the following:
+* `name` - (Optional) The Name of the setting.
+* `value` - (Optional) The Value of the setting.
 
 ## Attributes Reference
 
