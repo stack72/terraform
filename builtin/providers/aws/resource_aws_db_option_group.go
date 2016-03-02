@@ -278,6 +278,14 @@ func resourceAwsDbOptionHash(v interface{}) int {
 		buf.WriteString(fmt.Sprintf("%s-", o["value"].(string)))
 	}
 
+	for _, vpcRaw := range m["vpc_security_group_memberships"].(*schema.Set).List() {
+		buf.WriteString(fmt.Sprintf("%s-", vpcRaw.(string)))
+	}
+
+	for _, sgRaw := range m["db_security_group_memberships"].(*schema.Set).List() {
+		buf.WriteString(fmt.Sprintf("%s-", sgRaw.(string)))
+	}
+
 	return hashcode.String(buf.String())
 }
 

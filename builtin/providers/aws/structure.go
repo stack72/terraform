@@ -498,8 +498,17 @@ func flattenOptions(list []*rds.Option) []map[string]interface{} {
 				r["port"] = *i.Port
 			}
 
-			// r["db_security_group_memberships"] = i.DBSecurityGroupMemberships
-			// r["vpc_security_group_memberships"] = i.VpcSecurityGroupMemberships
+			sg := make([]string, 0, len(i.DBSecurityGroupMemberships))
+			for _, member := range i.DBSecurityGroupMemberships {
+				sg = append(sg, *member.DBSecurityGroupName)
+			}
+			r["db_security_group_memberships"] = sg
+
+			vpcsg := make([]string, 0, len(i.VpcSecurityGroupMemberships))
+			for _, member := range i.VpcSecurityGroupMemberships {
+				vpcsg = append(vpcsg, *member.VpcSecurityGroupId)
+			}
+			r["vpc_security_group_memberships"] = vpcsg
 
 			settings := make([]map[string]interface{}, 0, len(i.OptionSettings))
 			for _, j := range i.OptionSettings {
