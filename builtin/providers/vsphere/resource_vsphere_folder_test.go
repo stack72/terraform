@@ -135,8 +135,8 @@ func testAccCheckVSphereFolderDestroy(s *terraform.State) error {
 			return fmt.Errorf("error %s", err)
 		}
 
-		f, err := object.NewSearchIndex(client.Client).FindChild(context.TODO(), dcFolders.VmFolder, rs.Primary.Attributes["path"])
-		if f != nil {
+		_, err = object.NewSearchIndex(client.Client).FindChild(context.TODO(), dcFolders.VmFolder, rs.Primary.Attributes["path"])
+		if err == nil {
 			return fmt.Errorf("Record still exists")
 		}
 	}

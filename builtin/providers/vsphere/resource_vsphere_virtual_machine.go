@@ -38,9 +38,8 @@ type networkInterface struct {
 }
 
 type hardDisk struct {
-	size     int64
-	iops     int64
-	initType string
+	size int64
+	iops int64
 }
 
 type virtualMachine struct {
@@ -236,21 +235,6 @@ func resourceVSphereVirtualMachine() *schema.Resource {
 							ForceNew: true,
 						},
 
-						"type": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Default:  "eager_zeroed",
-							ValidateFunc: func(v interface{}, k string) (ws []string, errors []error) {
-								value := v.(string)
-								if value != "thin" && value != "eager_zeroed" {
-									errors = append(errors, fmt.Errorf(
-										"only 'thin' and 'eager_zeroed' are supported values for 'type'"))
-								}
-								return
-							},
-						},
-
 						"datastore": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
@@ -397,13 +381,9 @@ func resourceVSphereVirtualMachineCreate(d *schema.ResourceData, meta interface{
 				} else {
 					return fmt.Errorf("Size argument is required.")
 				}
-
 			}
 			if v, ok := disk["iops"].(int); ok && v != 0 {
 				disks[i].iops = int64(v)
-			}
-			if v, ok := disk["type"].(string); ok && v != "" {
-				disks[i].initType = v
 			}
 		}
 		vm.hardDisks = disks
@@ -426,7 +406,7 @@ func resourceVSphereVirtualMachineCreate(d *schema.ResourceData, meta interface{
 		if v, ok := d.GetOk("boot_delay"); ok {
 			stateConf := &resource.StateChangeConf{
 				Pending:    []string{"pending"},
-				Target:     []string{"active"},
+				Target:     "active",
 				Refresh:    waitForNetworkingActive(client, vm.datacenter, vm.Path()),
 				Timeout:    600 * time.Second,
 				Delay:      time.Duration(v.(int)) * time.Second,
@@ -668,8 +648,8 @@ func buildNetworkDevice(f *find.Finder, label, adapterType string) (*types.Virtu
 		return &types.VirtualDeviceConfigSpec{
 			Operation: types.VirtualDeviceConfigSpecOperationAdd,
 			Device: &types.VirtualVmxnet3{
-				VirtualVmxnet: types.VirtualVmxnet{
-					VirtualEthernetCard: types.VirtualEthernetCard{
+				types.VirtualVmxnet{
+					types.VirtualEthernetCard{
 						VirtualDevice: types.VirtualDevice{
 							Key:     -1,
 							Backing: backing,
@@ -683,7 +663,7 @@ func buildNetworkDevice(f *find.Finder, label, adapterType string) (*types.Virtu
 		return &types.VirtualDeviceConfigSpec{
 			Operation: types.VirtualDeviceConfigSpecOperationAdd,
 			Device: &types.VirtualE1000{
-				VirtualEthernetCard: types.VirtualEthernetCard{
+				types.VirtualEthernetCard{
 					VirtualDevice: types.VirtualDevice{
 						Key:     -1,
 						Backing: backing,
@@ -698,7 +678,7 @@ func buildNetworkDevice(f *find.Finder, label, adapterType string) (*types.Virtu
 }
 
 // buildVMRelocateSpec builds VirtualMachineRelocateSpec to set a place for a new VirtualMachine.
-func buildVMRelocateSpec(rp *object.ResourcePool, ds *object.Datastore, vm *object.VirtualMachine, initType string) (types.VirtualMachineRelocateSpec, error) {
+func buildVMRelocateSpec(rp *object.ResourcePool, ds *object.Datastore, vm *object.VirtualMachine) (types.VirtualMachineRelocateSpec, error) {
 	var key int
 
 	devices, err := vm.Device(context.TODO())
@@ -711,7 +691,6 @@ func buildVMRelocateSpec(rp *object.ResourcePool, ds *object.Datastore, vm *obje
 		}
 	}
 
-	isThin := initType == "thin"
 	rpr := rp.Reference()
 	dsr := ds.Reference()
 	return types.VirtualMachineRelocateSpec{
@@ -722,8 +701,8 @@ func buildVMRelocateSpec(rp *object.ResourcePool, ds *object.Datastore, vm *obje
 				Datastore: dsr,
 				DiskBackingInfo: &types.VirtualDiskFlatVer2BackingInfo{
 					DiskMode:        "persistent",
-					ThinProvisioned: types.NewBool(isThin),
-					EagerlyScrub:    types.NewBool(!isThin),
+					ThinProvisioned: types.NewBool(false),
+					EagerlyScrub:    types.NewBool(true),
 				},
 				DiskId: key,
 			},
@@ -943,7 +922,7 @@ func (vm *virtualMachine) createVirtualMachine(c *govmomi.Client) error {
 
 			if d.Type == "StoragePod" {
 				sp := object.StoragePod{
-					Folder: object.NewFolder(c.Client, d),
+					object.NewFolder(c.Client, d),
 				}
 				sps := buildStoragePlacementSpecCreate(dcFolders, resourcePool, sp, configSpec)
 				datastore, err = findDatastore(c, sps)
@@ -1075,10 +1054,9 @@ func (vm *virtualMachine) deployVirtualMachine(c *govmomi.Client) error {
 
 			if d.Type == "StoragePod" {
 				sp := object.StoragePod{
-					Folder: object.NewFolder(c.Client, d),
+					object.NewFolder(c.Client, d),
 				}
 				sps := buildStoragePlacementSpecClone(c, dcFolders, template, resourcePool, sp)
-
 				datastore, err = findDatastore(c, sps)
 				if err != nil {
 					return err
@@ -1090,11 +1068,10 @@ func (vm *virtualMachine) deployVirtualMachine(c *govmomi.Client) error {
 	}
 	log.Printf("[DEBUG] datastore: %#v", datastore)
 
-	relocateSpec, err := buildVMRelocateSpec(resourcePool, datastore, template, vm.hardDisks[0].initType)
+	relocateSpec, err := buildVMRelocateSpec(resourcePool, datastore, template)
 	if err != nil {
 		return err
 	}
-
 	log.Printf("[DEBUG] relocate spec: %v", relocateSpec)
 
 	// network
@@ -1249,7 +1226,7 @@ func (vm *virtualMachine) deployVirtualMachine(c *govmomi.Client) error {
 	log.Printf("[DEBUG]VM customization finished")
 
 	for i := 1; i < len(vm.hardDisks); i++ {
-		err = addHardDisk(newVM, vm.hardDisks[i].size, vm.hardDisks[i].iops, vm.hardDisks[i].initType)
+		err = addHardDisk(newVM, vm.hardDisks[i].size, vm.hardDisks[i].iops, "eager_zeroed")
 		if err != nil {
 			return err
 		}

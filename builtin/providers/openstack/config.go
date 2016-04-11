@@ -2,9 +2,7 @@ package openstack
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/rackspace/gophercloud"
@@ -23,7 +21,6 @@ type Config struct {
 	DomainName       string
 	Insecure         bool
 	EndpointType     string
-	CACertFile       string
 
 	osClient *gophercloud.ProviderClient
 }
@@ -52,24 +49,6 @@ func (c *Config) loadAndValidate() error {
 	client, err := openstack.NewClient(ao.IdentityEndpoint)
 	if err != nil {
 		return err
-	}
-
-	if c.CACertFile != "" {
-
-		caCert, err := ioutil.ReadFile(c.CACertFile)
-		if err != nil {
-			return err
-		}
-
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		config := &tls.Config{
-			RootCAs: caCertPool,
-		}
-
-		transport := &http.Transport{TLSClientConfig: config}
-		client.HTTPClient.Transport = transport
 	}
 
 	if c.Insecure {

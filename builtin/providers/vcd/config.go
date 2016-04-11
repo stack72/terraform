@@ -14,13 +14,11 @@ type Config struct {
 	Href            string
 	VDC             string
 	MaxRetryTimeout int
-	InsecureFlag    bool
 }
 
 type VCDClient struct {
 	*govcd.VCDClient
 	MaxRetryTimeout int
-	InsecureFlag    bool
 }
 
 func (c *Config) Client() (*VCDClient, error) {
@@ -30,8 +28,8 @@ func (c *Config) Client() (*VCDClient, error) {
 	}
 
 	vcdclient := &VCDClient{
-		govcd.NewVCDClient(*u, c.InsecureFlag),
-		c.MaxRetryTimeout, c.InsecureFlag}
+		govcd.NewVCDClient(*u),
+		c.MaxRetryTimeout}
 	org, vcd, err := vcdclient.Authenticate(c.User, c.Password, c.Org, c.VDC)
 	if err != nil {
 		return nil, fmt.Errorf("Something went wrong: %s", err)

@@ -37,8 +37,7 @@ func resourceAwsRedshiftCluster() *schema.Resource {
 			},
 			"cluster_type": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 			},
 
 			"node_type": &schema.Schema{
@@ -146,7 +145,6 @@ func resourceAwsRedshiftCluster() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  true,
 			},
 
 			"encrypted": &schema.Schema{
@@ -202,20 +200,15 @@ func resourceAwsRedshiftClusterCreate(d *schema.ResourceData, meta interface{}) 
 		Port:                aws.Int64(int64(d.Get("port").(int))),
 		MasterUserPassword:  aws.String(d.Get("master_password").(string)),
 		MasterUsername:      aws.String(d.Get("master_username").(string)),
+		ClusterType:         aws.String(d.Get("cluster_type").(string)),
 		ClusterVersion:      aws.String(d.Get("cluster_version").(string)),
 		NodeType:            aws.String(d.Get("node_type").(string)),
 		DBName:              aws.String(d.Get("database_name").(string)),
 		AllowVersionUpgrade: aws.Bool(d.Get("allow_version_upgrade").(bool)),
-		PubliclyAccessible:  aws.Bool(d.Get("publicly_accessible").(bool)),
 	}
-
-	if v := d.Get("number_of_nodes").(int); v > 1 {
-		createOpts.ClusterType = aws.String("multi-node")
+	if d.Get("cluster_type") == "multi-node" {
 		createOpts.NumberOfNodes = aws.Int64(int64(d.Get("number_of_nodes").(int)))
-	} else {
-		createOpts.ClusterType = aws.String("single-node")
 	}
-
 	if v := d.Get("cluster_security_groups").(*schema.Set); v.Len() > 0 {
 		createOpts.ClusterSecurityGroups = expandStringList(v.List())
 	}
@@ -244,6 +237,10 @@ func resourceAwsRedshiftClusterCreate(d *schema.ResourceData, meta interface{}) 
 		createOpts.AutomatedSnapshotRetentionPeriod = aws.Int64(int64(v.(int)))
 	}
 
+	if v, ok := d.GetOk("publicly_accessible"); ok {
+		createOpts.PubliclyAccessible = aws.Bool(v.(bool))
+	}
+
 	if v, ok := d.GetOk("encrypted"); ok {
 		createOpts.Encrypted = aws.Bool(v.(bool))
 	}
@@ -264,7 +261,7 @@ func resourceAwsRedshiftClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"creating", "backing-up", "modifying"},
-		Target:     []string{"available"},
+		Target:     "available",
 		Refresh:    resourceAwsRedshiftClusterStateRefreshFunc(d, meta),
 		Timeout:    5 * time.Minute,
 		MinTimeout: 3 * time.Second,
@@ -319,11 +316,6 @@ func resourceAwsRedshiftClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("preferred_maintenance_window", rsc.PreferredMaintenanceWindow)
 	d.Set("endpoint", aws.String(fmt.Sprintf("%s:%d", *rsc.Endpoint.Address, *rsc.Endpoint.Port)))
 	d.Set("cluster_parameter_group_name", rsc.ClusterParameterGroups[0].ParameterGroupName)
-	if len(rsc.ClusterNodes) > 1 {
-		d.Set("cluster_type", "multi-node")
-	} else {
-		d.Set("cluster_type", "single-node")
-	}
 
 	var vpcg []string
 	for _, g := range rsc.VpcSecurityGroups {
@@ -364,12 +356,9 @@ func resourceAwsRedshiftClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if d.HasChange("number_of_nodes") {
-		if v := d.Get("number_of_nodes").(int); v > 1 {
-			req.ClusterType = aws.String("multi-node")
-			req.NumberOfNodes = aws.Int64(int64(d.Get("number_of_nodes").(int)))
-		} else {
-			req.ClusterType = aws.String("single-node")
-		}
+		log.Printf("[INFO] When changing the NumberOfNodes in a Redshift Cluster, NodeType is required")
+		req.NumberOfNodes = aws.Int64(int64(d.Get("number_of_nodes").(int)))
+		req.NodeType = aws.String(d.Get("node_type").(string))
 	}
 
 	if d.HasChange("cluster_security_groups") {
@@ -413,7 +402,7 @@ func resourceAwsRedshiftClusterUpdate(d *schema.ResourceData, meta interface{}) 
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"creating", "deleting", "rebooting", "resizing", "renaming"},
-		Target:     []string{"available"},
+		Target:     "available",
 		Refresh:    resourceAwsRedshiftClusterStateRefreshFunc(d, meta),
 		Timeout:    10 * time.Minute,
 		MinTimeout: 5 * time.Second,
@@ -455,7 +444,7 @@ func resourceAwsRedshiftClusterDelete(d *schema.ResourceData, meta interface{}) 
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"available", "creating", "deleting", "rebooting", "resizing", "renaming"},
-		Target:     []string{"destroyed"},
+		Target:     "destroyed",
 		Refresh:    resourceAwsRedshiftClusterStateRefreshFunc(d, meta),
 		Timeout:    40 * time.Minute,
 		MinTimeout: 5 * time.Second,

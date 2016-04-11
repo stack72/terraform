@@ -185,13 +185,6 @@ func resourceAwsLaunchConfiguration() *schema.Resource {
 							Computed: true,
 							ForceNew: true,
 						},
-
-						"encrypted": &schema.Schema{
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-							ForceNew: true,
-						},
 					},
 				},
 				Set: func(v interface{}) int {
@@ -333,7 +326,6 @@ func resourceAwsLaunchConfigurationCreate(d *schema.ResourceData, meta interface
 			bd := v.(map[string]interface{})
 			ebs := &autoscaling.Ebs{
 				DeleteOnTermination: aws.Bool(bd["delete_on_termination"].(bool)),
-				Encrypted:           aws.Bool(bd["encrypted"].(bool)),
 			}
 
 			if v, ok := bd["snapshot_id"].(string); ok && v != "" {
@@ -577,9 +569,6 @@ func readBlockDevicesFromLaunchConfiguration(d *schema.ResourceData, lc *autosca
 		}
 		if bdm.Ebs != nil && bdm.Ebs.Iops != nil {
 			bd["iops"] = *bdm.Ebs.Iops
-		}
-		if bdm.Ebs != nil && bdm.Ebs.Encrypted != nil {
-			bd["encrypted"] = *bdm.Ebs.Encrypted
 		}
 		if bdm.DeviceName != nil && *bdm.DeviceName == *rootDeviceName {
 			blockDevices["root"] = bd

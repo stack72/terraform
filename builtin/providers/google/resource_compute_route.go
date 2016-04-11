@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
@@ -81,7 +82,9 @@ func resourceComputeRoute() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"self_link": &schema.Schema{

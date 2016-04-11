@@ -438,10 +438,6 @@ func (n *graphNodeExpandedResource) EvalTree() EvalNode {
 					State:    &state,
 					Output:   &diffApply,
 				},
-				&EvalIgnoreChanges{
-					Resource: n.Resource,
-					Diff:     &diffApply,
-				},
 
 				// Get the saved diff
 				&EvalReadDiff{

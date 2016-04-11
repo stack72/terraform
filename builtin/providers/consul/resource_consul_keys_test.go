@@ -11,7 +11,7 @@ import (
 
 func TestAccConsulKeys_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() {},
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckConsulKeysDestroy,
 		Steps: []resource.TestStep{
@@ -19,16 +19,9 @@ func TestAccConsulKeys_basic(t *testing.T) {
 				Config: testAccConsulKeysConfig,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckConsulKeysExists(),
+					testAccCheckConsulKeysValue("consul_keys.app", "time", "<any>"),
 					testAccCheckConsulKeysValue("consul_keys.app", "enabled", "true"),
 					testAccCheckConsulKeysValue("consul_keys.app", "set", "acceptance"),
-				),
-			},
-			resource.TestStep{
-				Config: testAccConsulKeysConfig_Update,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckConsulKeysExists(),
-					testAccCheckConsulKeysValue("consul_keys.app", "enabled", "true"),
-					testAccCheckConsulKeysValue("consul_keys.app", "set", "acceptanceUpdated"),
 				),
 			},
 		},
@@ -37,7 +30,7 @@ func TestAccConsulKeys_basic(t *testing.T) {
 
 func testAccCheckConsulKeysDestroy(s *terraform.State) error {
 	kv := testAccProvider.Meta().(*consulapi.Client).KV()
-	opts := &consulapi.QueryOptions{Datacenter: "dc1"}
+	opts := &consulapi.QueryOptions{Datacenter: "nyc3"}
 	pair, _, err := kv.Get("test/set", opts)
 	if err != nil {
 		return err
@@ -51,7 +44,7 @@ func testAccCheckConsulKeysDestroy(s *terraform.State) error {
 func testAccCheckConsulKeysExists() resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		kv := testAccProvider.Meta().(*consulapi.Client).KV()
-		opts := &consulapi.QueryOptions{Datacenter: "dc1"}
+		opts := &consulapi.QueryOptions{Datacenter: "nyc3"}
 		pair, _, err := kv.Get("test/set", opts)
 		if err != nil {
 			return err
@@ -85,7 +78,11 @@ func testAccCheckConsulKeysValue(n, attr, val string) resource.TestCheckFunc {
 
 const testAccConsulKeysConfig = `
 resource "consul_keys" "app" {
-	datacenter = "dc1"
+	datacenter = "nyc3"
+	key {
+		name = "time"
+		path = "global/time"
+	}
 	key {
 		name = "enabled"
 		path = "test/enabled"
@@ -95,23 +92,6 @@ resource "consul_keys" "app" {
 		name = "set"
 		path = "test/set"
 		value = "acceptance"
-		delete = true
-	}
-}
-`
-
-const testAccConsulKeysConfig_Update = `
-resource "consul_keys" "app" {
-	datacenter = "dc1"
-	key {
-		name = "enabled"
-		path = "test/enabled"
-		default = "true"
-	}
-	key {
-		name = "set"
-		path = "test/set"
-		value = "acceptanceUpdated"
 		delete = true
 	}
 }

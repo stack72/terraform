@@ -51,7 +51,9 @@ func resourceComputeFirewall() *schema.Resource {
 							Type:     schema.TypeSet,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
-							Set:      schema.HashString,
+							Set: func(v interface{}) int {
+								return hashcode.String(v.(string))
+							},
 						},
 					},
 				},
@@ -62,21 +64,27 @@ func resourceComputeFirewall() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"source_tags": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"target_tags": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"self_link": &schema.Schema{

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -18,7 +17,9 @@ func TestAtlasClient_impl(t *testing.T) {
 }
 
 func TestAtlasClient(t *testing.T) {
-	acctest.RemoteTestPrecheck(t)
+	if _, err := http.Get("http://google.com"); err != nil {
+		t.Skipf("skipping, internet seems to not be available: %s", err)
+	}
 
 	token := os.Getenv("ATLAS_TOKEN")
 	if token == "" {

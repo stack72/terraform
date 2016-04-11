@@ -48,11 +48,9 @@ The following arguments are supported:
 
 * `api_key` - (Optional; Required if not using `password`)
 
-* `domain_id` - (Optional) If omitted, the `OS_DOMAIN_ID` environment
-    variable is used.
+* `domain_id` - (Optional)
 
-* `domain_name` - (Optional) If omitted, the `OS_DOMAIN_NAME`
-    environment variable is used.
+* `domain_name` - (Optional)
 
 * `tenant_id` - (Optional)
 

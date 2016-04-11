@@ -278,11 +278,6 @@ func variablesStr(vs []*Variable) string {
 			required = " (required)"
 		}
 
-		declaredType := ""
-		if v.DeclaredType != "" {
-			declaredType = fmt.Sprintf(" (%s)", v.DeclaredType)
-		}
-
 		if v.Default == nil || v.Default == "" {
 			v.Default = "<>"
 		}
@@ -291,10 +286,9 @@ func variablesStr(vs []*Variable) string {
 		}
 
 		result += fmt.Sprintf(
-			"%s%s%s\n  %v\n  %s\n",
+			"%s%s\n  %v\n  %s\n",
 			k,
 			required,
-			declaredType,
 			v.Default,
 			v.Description)
 	}

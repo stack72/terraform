@@ -93,6 +93,7 @@ func testAccTestCheckDestroy(test *statuscake.Test) resource.TestCheckFunc {
 
 		return nil
 	}
+	return nil
 }
 
 const testAccTestConfig_basic = `

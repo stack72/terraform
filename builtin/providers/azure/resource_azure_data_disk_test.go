@@ -7,14 +7,13 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/management"
 	"github.com/Azure/azure-sdk-for-go/management/virtualmachinedisk"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccAzureDataDisk_basic(t *testing.T) {
 	var disk virtualmachinedisk.DataDiskResponse
-	name := fmt.Sprintf("terraform-test%d", acctest.RandInt())
+	name := fmt.Sprintf("terraform-test%d", genRandInt())
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -39,7 +38,7 @@ func TestAccAzureDataDisk_basic(t *testing.T) {
 
 func TestAccAzureDataDisk_update(t *testing.T) {
 	var disk virtualmachinedisk.DataDiskResponse
-	name := fmt.Sprintf("terraform-test%d", acctest.RandInt())
+	name := fmt.Sprintf("terraform-test%d", genRandInt())
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

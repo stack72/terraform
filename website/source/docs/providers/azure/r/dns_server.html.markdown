@@ -17,6 +17,7 @@ resource "azure_dns_server" "google-dns" {
     name = "google"
     dns_address = "8.8.8.8"
 }
+`
 ```
 
 ## Argument Reference

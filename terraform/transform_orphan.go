@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform/config"
 	"github.com/hashicorp/terraform/config/module"
@@ -24,6 +25,11 @@ type OrphanTransformer struct {
 	// Module is the root module. We'll look up the proper configuration
 	// using the graph path.
 	Module *module.Tree
+
+	// Targets are user-specified resources to target. We need to be aware of
+	// these so we don't improperly identify orphans when they've just been
+	// filtered out of the graph via targeting.
+	Targets []ResourceAddress
 
 	// View, if non-nil will set a view on the module state.
 	View string
@@ -62,6 +68,22 @@ func (t *OrphanTransformer) Transform(g *Graph) error {
 		}
 
 		resourceOrphans := state.Orphans(config)
+		if len(t.Targets) > 0 {
+			var targetedOrphans []string
+			for _, o := range resourceOrphans {
+				targeted := false
+				for _, t := range t.Targets {
+					prefix := fmt.Sprintf("%s.%s.%d", t.Type, t.Name, t.Index)
+					if strings.HasPrefix(o, prefix) {
+						targeted = true
+					}
+				}
+				if targeted {
+					targetedOrphans = append(targetedOrphans, o)
+				}
+			}
+			resourceOrphans = targetedOrphans
+		}
 
 		resourceVertexes = make([]dag.Vertex, len(resourceOrphans))
 		for i, k := range resourceOrphans {
@@ -73,15 +95,11 @@ func (t *OrphanTransformer) Transform(g *Graph) error {
 
 			rs := state.Resources[k]
 
-			rsk, err := ParseResourceStateKey(k)
-			if err != nil {
-				return err
-			}
 			resourceVertexes[i] = g.Add(&graphNodeOrphanResource{
-				Path:        g.Path,
-				ResourceKey: rsk,
-				Provider:    rs.Provider,
-				dependentOn: rs.Dependencies,
+				ResourceName: k,
+				ResourceType: rs.Type,
+				Provider:     rs.Provider,
+				dependentOn:  rs.Dependencies,
 			})
 		}
 	}
@@ -157,25 +175,15 @@ func (n *graphNodeOrphanModule) Expand(b GraphBuilder) (GraphNodeSubgraph, error
 
 // graphNodeOrphanResource is the graph vertex representing an orphan resource..
 type graphNodeOrphanResource struct {
-	Path        []string
-	ResourceKey *ResourceStateKey
-	Provider    string
+	ResourceName string
+	ResourceType string
+	Provider     string
 
 	dependentOn []string
 }
 
-func (n *graphNodeOrphanResource) ConfigType() GraphNodeConfigType {
-	return GraphNodeConfigTypeResource
-}
-
 func (n *graphNodeOrphanResource) ResourceAddress() *ResourceAddress {
-	return &ResourceAddress{
-		Index:        n.ResourceKey.Index,
-		InstanceType: TypePrimary,
-		Name:         n.ResourceKey.Name,
-		Path:         n.Path[1:],
-		Type:         n.ResourceKey.Type,
-	}
+	return n.ResourceAddress()
 }
 
 func (n *graphNodeOrphanResource) DependableName() []string {
@@ -194,11 +202,11 @@ func (n *graphNodeOrphanResource) Flatten(p []string) (dag.Vertex, error) {
 }
 
 func (n *graphNodeOrphanResource) Name() string {
-	return fmt.Sprintf("%s (orphan)", n.ResourceKey)
+	return fmt.Sprintf("%s (orphan)", n.ResourceName)
 }
 
 func (n *graphNodeOrphanResource) ProvidedBy() []string {
-	return []string{resourceProvider(n.ResourceKey.Type, n.Provider)}
+	return []string{resourceProvider(n.ResourceName, n.Provider)}
 }
 
 // GraphNodeEvalable impl.
@@ -209,7 +217,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 	seq := &EvalSequence{Nodes: make([]EvalNode, 0, 5)}
 
 	// Build instance info
-	info := &InstanceInfo{Id: n.ResourceKey.String(), Type: n.ResourceKey.Type}
+	info := &InstanceInfo{Id: n.ResourceName, Type: n.ResourceType}
 	seq.Nodes = append(seq.Nodes, &EvalInstanceInfo{Info: info})
 
 	// Refresh the resource
@@ -222,7 +230,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 					Output: &provider,
 				},
 				&EvalReadState{
-					Name:   n.ResourceKey.String(),
+					Name:   n.ResourceName,
 					Output: &state,
 				},
 				&EvalRefresh{
@@ -232,8 +240,8 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 					Output:   &state,
 				},
 				&EvalWriteState{
-					Name:         n.ResourceKey.String(),
-					ResourceType: n.ResourceKey.Type,
+					Name:         n.ResourceName,
+					ResourceType: n.ResourceType,
 					Provider:     n.Provider,
 					Dependencies: n.DependentOn(),
 					State:        &state,
@@ -249,7 +257,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 		Node: &EvalSequence{
 			Nodes: []EvalNode{
 				&EvalReadState{
-					Name:   n.ResourceKey.String(),
+					Name:   n.ResourceName,
 					Output: &state,
 				},
 				&EvalDiffDestroy{
@@ -258,7 +266,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 					Output: &diff,
 				},
 				&EvalWriteDiff{
-					Name: n.ResourceKey.String(),
+					Name: n.ResourceName,
 					Diff: &diff,
 				},
 			},
@@ -272,7 +280,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 		Node: &EvalSequence{
 			Nodes: []EvalNode{
 				&EvalReadDiff{
-					Name: n.ResourceKey.String(),
+					Name: n.ResourceName,
 					Diff: &diff,
 				},
 				&EvalGetProvider{
@@ -280,7 +288,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 					Output: &provider,
 				},
 				&EvalReadState{
-					Name:   n.ResourceKey.String(),
+					Name:   n.ResourceName,
 					Output: &state,
 				},
 				&EvalApply{
@@ -292,8 +300,8 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 					Error:    &err,
 				},
 				&EvalWriteState{
-					Name:         n.ResourceKey.String(),
-					ResourceType: n.ResourceKey.Type,
+					Name:         n.ResourceName,
+					ResourceType: n.ResourceType,
 					Provider:     n.Provider,
 					Dependencies: n.DependentOn(),
 					State:        &state,
@@ -312,7 +320,7 @@ func (n *graphNodeOrphanResource) EvalTree() EvalNode {
 }
 
 func (n *graphNodeOrphanResource) dependableName() string {
-	return n.ResourceKey.String()
+	return n.ResourceName
 }
 
 // GraphNodeDestroyable impl.

@@ -5,14 +5,19 @@ import (
 	"log"
 	"strings"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 )
 
+func stringHashcode(v interface{}) int {
+	return hashcode.String(v.(string))
+}
+
 func stringScopeHashcode(v interface{}) int {
 	v = canonicalizeServiceScope(v.(string))
-	return schema.HashString(v)
+	return hashcode.String(v.(string))
 }
 
 func resourceComputeInstance() *schema.Resource {
@@ -111,13 +116,7 @@ func resourceComputeInstance() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"network": &schema.Schema{
 							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-						},
-
-						"subnetwork": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 							ForceNew: true,
 						},
 
@@ -264,7 +263,7 @@ func resourceComputeInstance() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set:      stringHashcode,
 			},
 
 			"metadata_fingerprint": &schema.Schema{
@@ -451,36 +450,17 @@ func resourceComputeInstanceCreate(d *schema.ResourceData, meta interface{}) err
 			prefix := fmt.Sprintf("network_interface.%d", i)
 			// Load up the name of this network_interfac
 			networkName := d.Get(prefix + ".network").(string)
-			subnetworkName := d.Get(prefix + ".subnetwork").(string)
-			var networkLink, subnetworkLink string
-
-			if networkName != "" && subnetworkName != "" {
-				return fmt.Errorf("Cannot specify both network and subnetwork values.")
-			} else if networkName != "" {
-				network, err := config.clientCompute.Networks.Get(
-					config.Project, networkName).Do()
-				if err != nil {
-					return fmt.Errorf(
-						"Error referencing network '%s': %s",
-						networkName, err)
-				}
-				networkLink = network.SelfLink
-			} else {
-				region := getRegionFromZone(d.Get("zone").(string))
-				subnetwork, err := config.clientCompute.Subnetworks.Get(
-					config.Project, region, subnetworkName).Do()
-				if err != nil {
-					return fmt.Errorf(
-						"Error referencing subnetwork '%s' in region '%s': %s",
-						subnetworkName, region, err)
-				}
-				subnetworkLink = subnetwork.SelfLink
+			network, err := config.clientCompute.Networks.Get(
+				config.Project, networkName).Do()
+			if err != nil {
+				return fmt.Errorf(
+					"Error referencing network '%s': %s",
+					networkName, err)
 			}
 
 			// Build the networkInterface
 			var iface compute.NetworkInterface
-			iface.Network = networkLink
-			iface.Subnetwork = subnetworkLink
+			iface.Network = network.SelfLink
 
 			// Handle access_config structs
 			accessConfigsCount := d.Get(prefix + ".access_config.#").(int)
@@ -684,7 +664,6 @@ func resourceComputeInstanceRead(d *schema.ResourceData, meta interface{}) error
 				"name":          iface.Name,
 				"address":       iface.NetworkIP,
 				"network":       d.Get(fmt.Sprintf("network_interface.%d.network", i)),
-				"subnetwork":    d.Get(fmt.Sprintf("network_interface.%d.subnetwork", i)),
 				"access_config": accessConfigs,
 			})
 		}

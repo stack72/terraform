@@ -32,7 +32,7 @@ func (w *DnsChangeWaiter) RefreshFunc() resource.StateRefreshFunc {
 func (w *DnsChangeWaiter) Conf() *resource.StateChangeConf {
 	return &resource.StateChangeConf{
 		Pending: []string{"pending"},
-		Target:  []string{"done"},
+		Target:  "done",
 		Refresh: w.RefreshFunc(),
 	}
 }

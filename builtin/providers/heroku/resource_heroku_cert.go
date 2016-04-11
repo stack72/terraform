@@ -58,7 +58,7 @@ func resourceHerokuCertCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] SSL Certificate create configuration: %#v, %#v", app, opts)
 	a, err := client.SSLEndpointCreate(app, opts)
 	if err != nil {
-		return fmt.Errorf("Error creating SSL endpoint: %s", err)
+		panic(err)
 	}
 
 	d.SetId(a.ID)

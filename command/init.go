@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/go-getter"
@@ -31,8 +30,6 @@ func (c *InitCommand) Run(args []string) int {
 		return 1
 	}
 
-	remoteBackend = strings.ToLower(remoteBackend)
-
 	var path string
 	args = cmdFlags.Args()
 	if len(args) > 2 {
@@ -54,11 +51,6 @@ func (c *InitCommand) Run(args []string) int {
 			c.Ui.Error(fmt.Sprintf("Error getting pwd: %s", err))
 		}
 	}
-
-	// Set the state out path to be the path requested for the module
-	// to be copied. This ensures any remote states gets setup in the
-	// proper directory.
-	c.Meta.dataDir = filepath.Join(path, DefaultDataDirectory)
 
 	source := args[0]
 

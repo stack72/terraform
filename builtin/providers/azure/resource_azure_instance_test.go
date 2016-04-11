@@ -8,7 +8,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/management"
 	"github.com/Azure/azure-sdk-for-go/management/virtualmachine"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -47,25 +46,21 @@ func TestAccAzureInstance_basic(t *testing.T) {
 func TestAccAzureInstance_separateHostedService(t *testing.T) {
 	var dpmt virtualmachine.DeploymentResponse
 
-	hostedServiceName := fmt.Sprintf("terraform-testing-service%d", acctest.RandInt())
-
-	config := fmt.Sprintf(testAccAzureInstance_separateHostedService, hostedServiceName, instanceName, testAccStorageServiceName)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckAzureInstanceDestroyed(hostedServiceName),
+		CheckDestroy: testAccCheckAzureInstanceDestroyed(testAccHostedServiceName),
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: config,
+				Config: testAccAzureInstance_separateHostedService,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAzureInstanceExists(
-						"azure_instance.foo", hostedServiceName, &dpmt),
+						"azure_instance.foo", testAccHostedServiceName, &dpmt),
 					testAccCheckAzureInstanceBasicAttributes(&dpmt),
 					resource.TestCheckResourceAttr(
 						"azure_instance.foo", "name", instanceName),
 					resource.TestCheckResourceAttr(
-						"azure_instance.foo", "hosted_service_name", hostedServiceName),
+						"azure_instance.foo", "hosted_service_name", "terraform-testing-service"),
 					resource.TestCheckResourceAttr(
 						"azure_instance.foo", "location", "West US"),
 					resource.TestCheckResourceAttr(
@@ -446,7 +441,7 @@ resource "azure_instance" "foo" {
     }
 }`, instanceName, testAccStorageServiceName)
 
-var testAccAzureInstance_separateHostedService = `
+var testAccAzureInstance_separateHostedService = fmt.Sprintf(`
 resource "azure_hosted_service" "foo" {
 	name = "%s"
 	location = "West US"
@@ -469,7 +464,7 @@ resource "azure_instance" "foo" {
         public_port = 22
         private_port = 22
     }
-}`
+}`, testAccHostedServiceName, instanceName, testAccStorageServiceName)
 
 var testAccAzureInstance_advanced = fmt.Sprintf(`
 resource "azure_virtual_network" "foo" {

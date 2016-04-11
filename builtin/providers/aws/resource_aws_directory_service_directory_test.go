@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/directoryservice"
 
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -317,7 +316,7 @@ resource "aws_subnet" "bar" {
 }
 `
 
-var randomInteger = acctest.RandInt()
+var randomInteger = genRandInt()
 var testAccDirectoryServiceDirectoryConfig_withAlias = fmt.Sprintf(`
 resource "aws_directory_service_directory" "bar_a" {
   name = "corp.notexample.com"

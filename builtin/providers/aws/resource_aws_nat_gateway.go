@@ -77,7 +77,7 @@ func resourceAwsNatGatewayCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[DEBUG] Waiting for NAT Gateway (%s) to become available", d.Id())
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"pending"},
-		Target:  []string{"available"},
+		Target:  "available",
 		Refresh: NGStateRefreshFunc(conn, d.Id()),
 		Timeout: 10 * time.Minute,
 	}
@@ -137,7 +137,7 @@ func resourceAwsNatGatewayDelete(d *schema.ResourceData, meta interface{}) error
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"deleting"},
-		Target:     []string{"deleted"},
+		Target:     "deleted",
 		Refresh:    NGStateRefreshFunc(conn, d.Id()),
 		Timeout:    30 * time.Minute,
 		Delay:      10 * time.Second,

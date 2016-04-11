@@ -2,10 +2,9 @@ package remote
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
-
-	"github.com/hashicorp/terraform/helper/acctest"
 )
 
 func TestConsulClient_impl(t *testing.T) {
@@ -13,7 +12,9 @@ func TestConsulClient_impl(t *testing.T) {
 }
 
 func TestConsulClient(t *testing.T) {
-	acctest.RemoteTestPrecheck(t)
+	if _, err := http.Get("http://google.com"); err != nil {
+		t.Skipf("skipping, internet seems to not be available: %s", err)
+	}
 
 	client, err := consulFactory(map[string]string{
 		"address": "demo.consul.io:80",

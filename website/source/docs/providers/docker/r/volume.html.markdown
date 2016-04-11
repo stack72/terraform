@@ -27,8 +27,7 @@ resource "docker_volume" "shared_volume" {
 
 The following arguments are supported:
 
-* `name` - (Optional, string) The name of the Docker volume (generated if not
-  provided).
+* `name` - (Optional, string) The name of the Docker volume (generated if not provided).
 * `driver` - (Optional, string) Driver type for the volume (defaults to local).
 * `driver_opts` - (Optional, map of strings) Options specific to the driver.
 

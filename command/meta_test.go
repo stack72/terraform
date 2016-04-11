@@ -244,12 +244,12 @@ func TestMeta_addModuleDepthFlag(t *testing.T) {
 		"invalid envvar is ignored": {
 			EnvVar:   "-#",
 			Args:     []string{},
-			Expected: ModuleDepthDefault,
+			Expected: 0,
 		},
 		"empty envvar is okay too": {
 			EnvVar:   "",
 			Args:     []string{},
-			Expected: ModuleDepthDefault,
+			Expected: 0,
 		},
 	}
 

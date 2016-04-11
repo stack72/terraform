@@ -69,15 +69,7 @@ func parseAzureResourceID(id string) (*ResourceID, error) {
 		idObj.ResourceGroup = resourceGroup
 		delete(componentMap, "resourceGroups")
 	} else {
-		// Some Azure APIs are weird and provide things in lower case...
-		// However it's not clear whether the casing of other elements in the URI
-		// matter, so we explicitly look for that case here.
-		if resourceGroup, ok := componentMap["resourcegroups"]; ok {
-			idObj.ResourceGroup = resourceGroup
-			delete(componentMap, "resourcegroups")
-		} else {
-			return nil, fmt.Errorf("No resource group name found in: %q", path)
-		}
+		return nil, fmt.Errorf("No resource group name found in: %q", path)
 	}
 
 	// It is OK not to have a provider in the case of a resource group

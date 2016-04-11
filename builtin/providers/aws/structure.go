@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/directoryservice"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -16,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	elasticsearch "github.com/aws/aws-sdk-go/service/elasticsearchservice"
 	"github.com/aws/aws-sdk-go/service/elb"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/aws/aws-sdk-go/service/redshift"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -258,20 +256,6 @@ func expandRedshiftParameters(configured []interface{}) ([]*redshift.Parameter, 
 	return parameters, nil
 }
 
-func expandOptionSetting(list []interface{}) []*rds.OptionSetting {
-	options := make([]*rds.OptionSetting, 0, len(list))
-	for _, oRaw := range list {
-		data := oRaw.(map[string]interface{})
-		o := &rds.OptionSetting{
-			Name:  aws.String(data["name"].(string)),
-			Value: aws.String(data["value"].(string)),
-		}
-
-		options = append(options, o)
-	}
-	return options
-}
-
 func expandOptionConfiguration(configured []interface{}) ([]*rds.OptionConfiguration, error) {
 	var option []*rds.OptionConfiguration
 
@@ -283,13 +267,7 @@ func expandOptionConfiguration(configured []interface{}) ([]*rds.OptionConfigura
 		}
 
 		if raw, ok := data["port"]; ok {
-			if int64(raw.(int)) > 0 {
-				o.Port = aws.Int64(int64(raw.(int)))
-			}
-		}
-
-		if raw, ok := data["option_settings"]; ok {
-			o.OptionSettings = expandOptionSetting(raw.(*schema.Set).List())
+			o.Port = aws.Int64(int64(raw.(int)))
 		}
 
 		if raw, ok := data["db_security_group_memberships"]; ok {
@@ -486,45 +464,6 @@ func flattenParameters(list []*rds.Parameter) []map[string]interface{} {
 	return result
 }
 
-// Flattens an array of Options into a []map[string]interface{}
-func flattenOptions(list []*rds.Option) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(list))
-	for _, i := range list {
-		if i.OptionName != nil {
-
-			r := make(map[string]interface{})
-			r["option_name"] = *i.OptionName
-			if i.Port != nil {
-				r["port"] = *i.Port
-			}
-
-			sg := make([]string, 0, len(i.DBSecurityGroupMemberships))
-			for _, member := range i.DBSecurityGroupMemberships {
-				sg = append(sg, *member.DBSecurityGroupName)
-			}
-			r["db_security_group_memberships"] = sg
-
-			vpcsg := make([]string, 0, len(i.VpcSecurityGroupMemberships))
-			for _, member := range i.VpcSecurityGroupMemberships {
-				vpcsg = append(vpcsg, *member.VpcSecurityGroupId)
-			}
-			r["vpc_security_group_memberships"] = vpcsg
-
-			settings := make([]map[string]interface{}, 0, len(i.OptionSettings))
-			for _, j := range i.OptionSettings {
-				settings = append(settings, map[string]interface{}{
-					"name":  *j.Name,
-					"value": *j.Value,
-				})
-			}
-			r["option_settings"] = settings
-
-			result = append(result, r)
-		}
-	}
-	return result
-}
-
 // Flattens an array of Redshift Parameters into a []map[string]interface{}
 func flattenRedshiftParameters(list []*redshift.Parameter) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(list))
@@ -557,11 +496,6 @@ func expandStringList(configured []interface{}) []*string {
 		vs = append(vs, aws.String(v.(string)))
 	}
 	return vs
-}
-
-// Takes the result of schema.Set of strings and returns a []*string
-func expandStringSet(configured *schema.Set) []*string {
-	return expandStringList(configured.List())
 }
 
 // Takes list of pointers to strings. Expand to an array
@@ -769,26 +703,6 @@ func flattenDSVpcSettings(
 	return []map[string]interface{}{settings}
 }
 
-func flattenLambdaVpcConfigResponse(s *lambda.VpcConfigResponse) []map[string]interface{} {
-	settings := make(map[string]interface{}, 0)
-
-	if s == nil {
-		return nil
-	}
-
-	if len(s.SubnetIds) == 0 && len(s.SecurityGroupIds) == 0 && s.VpcId == nil {
-		return nil
-	}
-
-	settings["subnet_ids"] = schema.NewSet(schema.HashString, flattenStringList(s.SubnetIds))
-	settings["security_group_ids"] = schema.NewSet(schema.HashString, flattenStringList(s.SecurityGroupIds))
-	if s.VpcId != nil {
-		settings["vpc_id"] = *s.VpcId
-	}
-
-	return []map[string]interface{}{settings}
-}
-
 func flattenDSConnectSettings(
 	customerDnsIps []*string,
 	s *directoryservice.DirectoryConnectSettingsDescription) []map[string]interface{} {
@@ -859,14 +773,4 @@ func flattenCloudFormationOutputs(cfOutputs []*cloudformation.Output) map[string
 		outputs[*o.OutputKey] = *o.OutputValue
 	}
 	return outputs
-}
-
-func flattenAsgEnabledMetrics(list []*autoscaling.EnabledMetric) []string {
-	strs := make([]string, 0, len(list))
-	for _, r := range list {
-		if r.Metric != nil {
-			strs = append(strs, *r.Metric)
-		}
-	}
-	return strs
 }

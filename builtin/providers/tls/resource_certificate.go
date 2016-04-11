@@ -159,7 +159,7 @@ func createCertificate(d *schema.ResourceData, template, parent *x509.Certificat
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, template, parent, pub, priv)
 	if err != nil {
-		return fmt.Errorf("error creating certificate: %s", err)
+		fmt.Errorf("error creating certificate: %s", err)
 	}
 	certPem := string(pem.EncodeToMemory(&pem.Block{Type: pemCertType, Bytes: certBytes}))
 

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/elasticache"
 	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -88,14 +89,18 @@ func resourceAwsElasticacheCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 			"security_group_ids": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 			// Exported Attributes
 			"cache_nodes": &schema.Schema{
@@ -137,7 +142,9 @@ func resourceAwsElasticacheCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"snapshot_window": &schema.Schema{
@@ -178,7 +185,9 @@ func resourceAwsElasticacheCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"tags": tagsSchema(),
@@ -281,7 +290,7 @@ func resourceAwsElasticacheClusterCreate(d *schema.ResourceData, meta interface{
 	pending := []string{"creating"}
 	stateConf := &resource.StateChangeConf{
 		Pending:    pending,
-		Target:     []string{"available"},
+		Target:     "available",
 		Refresh:    cacheClusterStateRefreshFunc(conn, d.Id(), "available", pending),
 		Timeout:    10 * time.Minute,
 		Delay:      10 * time.Second,
@@ -457,7 +466,7 @@ func resourceAwsElasticacheClusterUpdate(d *schema.ResourceData, meta interface{
 		pending := []string{"modifying", "rebooting cache cluster nodes", "snapshotting"}
 		stateConf := &resource.StateChangeConf{
 			Pending:    pending,
-			Target:     []string{"available"},
+			Target:     "available",
 			Refresh:    cacheClusterStateRefreshFunc(conn, d.Id(), "available", pending),
 			Timeout:    5 * time.Minute,
 			Delay:      5 * time.Second,
@@ -528,9 +537,9 @@ func resourceAwsElasticacheClusterDelete(d *schema.ResourceData, meta interface{
 	log.Printf("[DEBUG] Waiting for deletion: %v", d.Id())
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"creating", "available", "deleting", "incompatible-parameters", "incompatible-network", "restore-failed"},
-		Target:     []string{},
+		Target:     "",
 		Refresh:    cacheClusterStateRefreshFunc(conn, d.Id(), "", []string{}),
-		Timeout:    20 * time.Minute,
+		Timeout:    10 * time.Minute,
 		Delay:      10 * time.Second,
 		MinTimeout: 3 * time.Second,
 	}

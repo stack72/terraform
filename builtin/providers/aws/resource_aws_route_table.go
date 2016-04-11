@@ -34,7 +34,9 @@ func resourceAwsRouteTable() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"route": &schema.Schema{
@@ -105,7 +107,7 @@ func resourceAwsRouteTableCreate(d *schema.ResourceData, meta interface{}) error
 		d.Id())
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"pending"},
-		Target:  []string{"ready"},
+		Target:  "ready",
 		Refresh: resourceAwsRouteTableStateRefreshFunc(conn, d.Id()),
 		Timeout: 1 * time.Minute,
 	}
@@ -370,7 +372,7 @@ func resourceAwsRouteTableDelete(d *schema.ResourceData, meta interface{}) error
 
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"ready"},
-		Target:  []string{},
+		Target:  "",
 		Refresh: resourceAwsRouteTableStateRefreshFunc(conn, d.Id()),
 		Timeout: 1 * time.Minute,
 	}

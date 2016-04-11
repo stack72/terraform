@@ -277,7 +277,7 @@ func (w *MapFieldWriter) setSet(
 		// not the `value` directly is because this forces all types
 		// to become []interface{} (generic) instead of []string, which
 		// most hash functions are expecting.
-		s := schema.ZeroValue().(*Set)
+		s := &Set{F: schema.Set}
 		tempR := &MapFieldReader{
 			Map:    BasicMapReader(tempW.Map()),
 			Schema: tempSchemaMap,

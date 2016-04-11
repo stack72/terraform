@@ -195,7 +195,7 @@ func resourceAwsVpnGatewayAttach(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[DEBUG] Waiting for VPN gateway (%s) to attach", d.Id())
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"detached", "attaching"},
-		Target:  []string{"attached"},
+		Target:  "attached",
 		Refresh: vpnGatewayAttachStateRefreshFunc(conn, d.Id(), "available"),
 		Timeout: 1 * time.Minute,
 	}
@@ -256,7 +256,7 @@ func resourceAwsVpnGatewayDetach(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[DEBUG] Waiting for VPN gateway (%s) to detach", d.Id())
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"attached", "detaching", "available"},
-		Target:  []string{"detached"},
+		Target:  "detached",
 		Refresh: vpnGatewayAttachStateRefreshFunc(conn, d.Id(), "detached"),
 		Timeout: 1 * time.Minute,
 	}

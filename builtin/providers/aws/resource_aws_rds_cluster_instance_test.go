@@ -2,10 +2,11 @@ package aws
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 
@@ -118,16 +119,16 @@ func testAccCheckAWSClusterInstanceExists(n string, v *rds.DBInstance) resource.
 var testAccAWSClusterInstanceConfig = fmt.Sprintf(`
 resource "aws_rds_cluster" "default" {
   cluster_identifier = "tf-aurora-cluster-test-%d"
-  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
-  database_name      = "mydb"
-  master_username    = "foo"
-  master_password    = "mustbeeightcharaters"
+  availability_zones = ["us-west-2a","us-west-2b","us-west-2c"]
+  database_name = "mydb"
+  master_username = "foo"
+  master_password = "mustbeeightcharaters"
 }
 
 resource "aws_rds_cluster_instance" "cluster_instances" {
-  identifier         = "tf-cluster-instance-%d"
-  cluster_identifier = "${aws_rds_cluster.default.id}"
-  instance_class     = "db.r3.large"
+  identifier = "aurora-cluster-test-instance"
+        cluster_identifier = "${aws_rds_cluster.default.id}"
+  instance_class = "db.r3.large"
 }
 
-`, acctest.RandInt(), acctest.RandInt())
+`, rand.New(rand.NewSource(time.Now().UnixNano())).Int())

@@ -117,7 +117,9 @@ func resourceAwsInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"public_dns": &schema.Schema{
@@ -399,7 +401,7 @@ func resourceAwsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"pending"},
-		Target:     []string{"running"},
+		Target:     "running",
 		Refresh:    InstanceStateRefreshFunc(conn, *instance.InstanceId),
 		Timeout:    10 * time.Minute,
 		Delay:      10 * time.Second,
@@ -1080,7 +1082,7 @@ func awsTerminateInstance(conn *ec2.EC2, id string) error {
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"pending", "running", "shutting-down", "stopped", "stopping"},
-		Target:     []string{"terminated"},
+		Target:     "terminated",
 		Refresh:    InstanceStateRefreshFunc(conn, id),
 		Timeout:    10 * time.Minute,
 		Delay:      10 * time.Second,

@@ -118,8 +118,6 @@ func resourceArmNetworkSecurityGroup() *schema.Resource {
 				},
 				Set: resourceArmNetworkSecurityGroupRuleHash,
 			},
-
-			"tags": tagsSchema(),
 		},
 	}
 }
@@ -131,7 +129,6 @@ func resourceArmNetworkSecurityGroupCreate(d *schema.ResourceData, meta interfac
 	name := d.Get("name").(string)
 	location := d.Get("location").(string)
 	resGroup := d.Get("resource_group_name").(string)
-	tags := d.Get("tags").(map[string]interface{})
 
 	sgRules, sgErr := expandAzureRmSecurityRules(d)
 	if sgErr != nil {
@@ -144,7 +141,6 @@ func resourceArmNetworkSecurityGroupCreate(d *schema.ResourceData, meta interfac
 		Properties: &network.SecurityGroupPropertiesFormat{
 			SecurityRules: &sgRules,
 		},
-		Tags: expandTags(tags),
 	}
 
 	resp, err := secClient.CreateOrUpdate(resGroup, name, sg)
@@ -157,7 +153,7 @@ func resourceArmNetworkSecurityGroupCreate(d *schema.ResourceData, meta interfac
 	log.Printf("[DEBUG] Waiting for Network Security Group (%s) to become available", name)
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"Accepted", "Updating"},
-		Target:  []string{"Succeeded"},
+		Target:  "Succeeded",
 		Refresh: securityGroupStateRefreshFunc(client, resGroup, name),
 		Timeout: 10 * time.Minute,
 	}
@@ -190,8 +186,6 @@ func resourceArmNetworkSecurityGroupRead(d *schema.ResourceData, meta interface{
 	if resp.Properties.SecurityRules != nil {
 		d.Set("security_rule", flattenNetworkSecurityRules(resp.Properties.SecurityRules))
 	}
-
-	flattenAndSetTags(d, resp.Tags)
 
 	return nil
 }

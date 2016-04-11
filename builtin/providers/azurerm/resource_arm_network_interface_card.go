@@ -139,8 +139,6 @@ func resourceArmNetworkInterface() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-
-			"tags": tagsSchema(),
 		},
 	}
 }
@@ -154,7 +152,6 @@ func resourceArmNetworkInterfaceCreate(d *schema.ResourceData, meta interface{})
 	name := d.Get("name").(string)
 	location := d.Get("location").(string)
 	resGroup := d.Get("resource_group_name").(string)
-	tags := d.Get("tags").(map[string]interface{})
 
 	properties := network.InterfacePropertiesFormat{}
 
@@ -201,7 +198,6 @@ func resourceArmNetworkInterfaceCreate(d *schema.ResourceData, meta interface{})
 		Name:       &name,
 		Location:   &location,
 		Properties: &properties,
-		Tags:       expandTags(tags),
 	}
 
 	resp, err := ifaceClient.CreateOrUpdate(resGroup, name, iface)
@@ -214,7 +210,7 @@ func resourceArmNetworkInterfaceCreate(d *schema.ResourceData, meta interface{})
 	log.Printf("[DEBUG] Waiting for Network Interface (%s) to become available", name)
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"Accepted", "Updating"},
-		Target:  []string{"Succeeded"},
+		Target:  "Succeeded",
 		Refresh: networkInterfaceStateRefreshFunc(client, resGroup, name),
 		Timeout: 10 * time.Minute,
 	}
@@ -274,8 +270,6 @@ func resourceArmNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) e
 			d.Set("internal_fqdn", iface.DNSSettings.InternalFqdn)
 		}
 	}
-
-	flattenAndSetTags(d, resp.Tags)
 
 	return nil
 }

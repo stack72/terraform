@@ -23,12 +23,6 @@ func resourceArmAvailabilitySet() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"resource_group_name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-
 			"location": &schema.Schema{
 				Type:      schema.TypeString,
 				Required:  true,
@@ -64,7 +58,11 @@ func resourceArmAvailabilitySet() *schema.Resource {
 				},
 			},
 
-			"tags": tagsSchema(),
+			"resource_group_name": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -80,7 +78,6 @@ func resourceArmAvailabilitySetCreate(d *schema.ResourceData, meta interface{}) 
 	resGroup := d.Get("resource_group_name").(string)
 	updateDomainCount := d.Get("platform_update_domain_count").(int)
 	faultDomainCount := d.Get("platform_fault_domain_count").(int)
-	tags := d.Get("tags").(map[string]interface{})
 
 	availSet := compute.AvailabilitySet{
 		Name:     &name,
@@ -89,7 +86,6 @@ func resourceArmAvailabilitySetCreate(d *schema.ResourceData, meta interface{}) 
 			PlatformFaultDomainCount:  &faultDomainCount,
 			PlatformUpdateDomainCount: &updateDomainCount,
 		},
-		Tags: expandTags(tags),
 	}
 
 	resp, err := availSetClient.CreateOrUpdate(resGroup, name, availSet)
@@ -124,8 +120,6 @@ func resourceArmAvailabilitySetRead(d *schema.ResourceData, meta interface{}) er
 	availSet := *resp.Properties
 	d.Set("platform_update_domain_count", availSet.PlatformUpdateDomainCount)
 	d.Set("platform_fault_domain_count", availSet.PlatformFaultDomainCount)
-
-	flattenAndSetTags(d, resp.Tags)
 
 	return nil
 }

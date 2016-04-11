@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/terraform/communicator/remote"
@@ -149,20 +148,10 @@ func (c *Communicator) Start(rc *remote.Cmd) error {
 func runCommand(shell *winrm.Shell, cmd *winrm.Command, rc *remote.Cmd) {
 	defer shell.Close()
 
-	var wg sync.WaitGroup
-	go func() {
-		wg.Add(1)
-		io.Copy(rc.Stdout, cmd.Stdout)
-		wg.Done()
-	}()
-	go func() {
-		wg.Add(1)
-		io.Copy(rc.Stderr, cmd.Stderr)
-		wg.Done()
-	}()
+	go io.Copy(rc.Stdout, cmd.Stdout)
+	go io.Copy(rc.Stderr, cmd.Stderr)
 
 	cmd.Wait()
-	wg.Wait()
 	rc.SetExited(cmd.ExitCode())
 }
 

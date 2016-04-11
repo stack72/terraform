@@ -68,7 +68,6 @@ The `disk` block supports:
 * `datastore` - (Optional) Datastore for this disk
 * `size` - (Required if template not provided) Size of this disk (in GB).
 * `iops` - (Optional) Number of virtual iops to allocate for this disk.
-* `type` - (Optional) 'eager_zeroed' (the default), or 'thin' are supported options.
 
 ## Attributes Reference
 

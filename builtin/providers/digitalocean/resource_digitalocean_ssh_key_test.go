@@ -51,7 +51,7 @@ func testAccCheckDigitalOceanSSHKeyDestroy(s *terraform.State) error {
 		_, _, err = client.Keys.GetByID(id)
 
 		if err == nil {
-			return fmt.Errorf("SSH key still exists")
+			fmt.Errorf("SSH key still exists")
 		}
 	}
 

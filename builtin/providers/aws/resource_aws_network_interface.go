@@ -186,7 +186,7 @@ func resourceAwsNetworkInterfaceDetach(oa *schema.Set, meta interface{}, eniId s
 		log.Printf("[DEBUG] Waiting for ENI (%s) to become dettached", eniId)
 		stateConf := &resource.StateChangeConf{
 			Pending: []string{"true"},
-			Target:  []string{"false"},
+			Target:  "false",
 			Refresh: networkInterfaceAttachmentRefreshFunc(conn, eniId),
 			Timeout: 10 * time.Minute,
 		}

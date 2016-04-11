@@ -169,7 +169,7 @@ func resourceAwsElasticacheParameterGroupUpdate(d *schema.ResourceData, meta int
 func resourceAwsElasticacheParameterGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"pending"},
-		Target:     []string{"destroyed"},
+		Target:     "destroyed",
 		Refresh:    resourceAwsElasticacheParameterGroupDeleteRefreshFunc(d, meta),
 		Timeout:    3 * time.Minute,
 		MinTimeout: 1 * time.Second,

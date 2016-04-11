@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elb"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -28,7 +29,9 @@ func resourceAwsProxyProtocolPolicy() *schema.Resource {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Required: true,
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 		},
 	}

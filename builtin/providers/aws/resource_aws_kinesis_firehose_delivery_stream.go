@@ -141,7 +141,7 @@ func resourceAwsKinesisFirehoseDeliveryStreamCreate(d *schema.ResourceData, meta
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"CREATING"},
-		Target:     []string{"ACTIVE"},
+		Target:     "ACTIVE",
 		Refresh:    firehoseStreamStateRefreshFunc(conn, sn),
 		Timeout:    5 * time.Minute,
 		Delay:      10 * time.Second,
@@ -256,7 +256,7 @@ func resourceAwsKinesisFirehoseDeliveryStreamDelete(d *schema.ResourceData, meta
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"DELETING"},
-		Target:     []string{"DESTROYED"},
+		Target:     "DESTROYED",
 		Refresh:    firehoseStreamStateRefreshFunc(conn, sn),
 		Timeout:    5 * time.Minute,
 		Delay:      10 * time.Second,

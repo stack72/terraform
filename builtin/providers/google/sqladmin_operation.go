@@ -37,7 +37,7 @@ func (w *SqlAdminOperationWaiter) RefreshFunc() resource.StateRefreshFunc {
 func (w *SqlAdminOperationWaiter) Conf() *resource.StateChangeConf {
 	return &resource.StateChangeConf{
 		Pending: []string{"PENDING", "RUNNING"},
-		Target:  []string{"DONE"},
+		Target:  "DONE",
 		Refresh: w.RefreshFunc(),
 	}
 }

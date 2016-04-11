@@ -75,7 +75,7 @@ func resourceAwsSubnetCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Waiting for subnet (%s) to become available", *subnet.SubnetId)
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"pending"},
-		Target:  []string{"available"},
+		Target:  "available",
 		Refresh: SubnetStateRefreshFunc(conn, *subnet.SubnetId),
 		Timeout: 10 * time.Minute,
 	}
@@ -166,7 +166,7 @@ func resourceAwsSubnetDelete(d *schema.ResourceData, meta interface{}) error {
 
 	wait := resource.StateChangeConf{
 		Pending:    []string{"pending"},
-		Target:     []string{"destroyed"},
+		Target:     "destroyed",
 		Timeout:    5 * time.Minute,
 		MinTimeout: 1 * time.Second,
 		Refresh: func() (interface{}, string, error) {

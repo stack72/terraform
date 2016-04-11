@@ -2,6 +2,7 @@ package cloudstack
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -81,12 +82,6 @@ func resourceCloudStackFirewall() *schema.Resource {
 					},
 				},
 			},
-
-			"parallelism": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  2,
-			},
 		},
 	}
 }
@@ -135,7 +130,7 @@ func createFirewallRules(
 	var wg sync.WaitGroup
 	wg.Add(nrs.Len())
 
-	sem := make(chan struct{}, d.Get("parallelism").(int))
+	sem := make(chan struct{}, 10)
 	for _, rule := range nrs.List() {
 		// Put in a tiny sleep here to avoid DoS'ing the API
 		time.Sleep(500 * time.Millisecond)
@@ -204,6 +199,9 @@ func createFirewallRule(
 			// Create an empty schema.Set to hold all processed ports
 			ports := &schema.Set{F: schema.HashString}
 
+			// Define a regexp for parsing the port
+			re := regexp.MustCompile(`^(\d+)(?:-(\d+))?$`)
+
 			for _, port := range ps.List() {
 				if _, ok := uuids[port.(string)]; ok {
 					ports.Add(port)
@@ -211,7 +209,7 @@ func createFirewallRule(
 					continue
 				}
 
-				m := splitPorts.FindStringSubmatch(port.(string))
+				m := re.FindStringSubmatch(port.(string))
 
 				startPort, err := strconv.Atoi(m[1])
 				if err != nil {
@@ -444,7 +442,7 @@ func deleteFirewallRules(
 	var wg sync.WaitGroup
 	wg.Add(ors.Len())
 
-	sem := make(chan struct{}, d.Get("parallelism").(int))
+	sem := make(chan struct{}, 10)
 	for _, rule := range ors.List() {
 		// Put a sleep here to avoid DoS'ing the API
 		time.Sleep(500 * time.Millisecond)
@@ -539,7 +537,7 @@ func verifyFirewallRuleParams(d *schema.ResourceData, rule map[string]interface{
 	protocol := rule["protocol"].(string)
 	if protocol != "tcp" && protocol != "udp" && protocol != "icmp" {
 		return fmt.Errorf(
-			"%q is not a valid protocol. Valid options are 'tcp', 'udp' and 'icmp'", protocol)
+			"%s is not a valid protocol. Valid options are 'tcp', 'udp' and 'icmp'", protocol)
 	}
 
 	if protocol == "icmp" {
@@ -552,17 +550,9 @@ func verifyFirewallRuleParams(d *schema.ResourceData, rule map[string]interface{
 				"Parameter icmp_code is a required parameter when using protocol 'icmp'")
 		}
 	} else {
-		if ports, ok := rule["ports"].(*schema.Set); ok {
-			for _, port := range ports.List() {
-				m := splitPorts.FindStringSubmatch(port.(string))
-				if m == nil {
-					return fmt.Errorf(
-						"%q is not a valid port value. Valid options are '80' or '80-90'", port.(string))
-				}
-			}
-		} else {
+		if _, ok := rule["ports"]; !ok {
 			return fmt.Errorf(
-				"Parameter ports is a required parameter when *not* using protocol 'icmp'")
+				"Parameter port is a required parameter when using protocol 'tcp' or 'udp'")
 		}
 	}
 

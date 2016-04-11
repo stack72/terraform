@@ -30,7 +30,6 @@ type ResourceData struct {
 	partial     bool
 	partialMap  map[string]struct{}
 	once        sync.Once
-	isNew       bool
 }
 
 // getResult is the internal structure that is generated when a Get
@@ -170,14 +169,6 @@ func (d *ResourceData) SetPartial(k string) {
 	if d.partial {
 		d.partialMap[k] = struct{}{}
 	}
-}
-
-func (d *ResourceData) MarkNewResource() {
-	d.isNew = true
-}
-
-func (d *ResourceData) IsNewResource() bool {
-	return d.isNew
 }
 
 // Id returns the ID of the resource.

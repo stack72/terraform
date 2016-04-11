@@ -23,7 +23,6 @@ func TestAccCloudStackNetwork_basic(t *testing.T) {
 					testAccCheckCloudStackNetworkExists(
 						"cloudstack_network.foo", &network),
 					testAccCheckCloudStackNetworkBasicAttributes(&network),
-					testAccCheckNetworkTags(&network, "terraform-tag", "true"),
 				),
 			},
 		},
@@ -94,25 +93,14 @@ func testAccCheckCloudStackNetworkBasicAttributes(
 		}
 
 		if network.Cidr != CLOUDSTACK_NETWORK_2_CIDR {
-			return fmt.Errorf("Bad CIDR: %s", network.Cidr)
+			return fmt.Errorf("Bad service offering: %s", network.Cidr)
 		}
 
 		if network.Networkofferingname != CLOUDSTACK_NETWORK_2_OFFERING {
-			return fmt.Errorf("Bad network offering: %s", network.Networkofferingname)
+			return fmt.Errorf("Bad template: %s", network.Networkofferingname)
 		}
 
 		return nil
-	}
-}
-
-func testAccCheckNetworkTags(
-	n *cloudstack.Network, key string, value string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		tags := make(map[string]string)
-		for item := range n.Tags {
-			tags[n.Tags[item].Key] = n.Tags[item].Value
-		}
-		return testAccCheckTags(tags, key, value)
 	}
 }
 
@@ -163,13 +151,10 @@ func testAccCheckCloudStackNetworkDestroy(s *terraform.State) error {
 
 var testAccCloudStackNetwork_basic = fmt.Sprintf(`
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	zone = "%s"
-	tags = {
-		terraform-tag = "true"
-	}
+  name = "terraform-network"
+  cidr = "%s"
+  network_offering = "%s"
+  zone = "%s"
 }`,
 	CLOUDSTACK_NETWORK_2_CIDR,
 	CLOUDSTACK_NETWORK_2_OFFERING,
@@ -184,11 +169,11 @@ resource "cloudstack_vpc" "foobar" {
 }
 
 resource "cloudstack_network" "foo" {
-	name = "terraform-network"
-	cidr = "%s"
-	network_offering = "%s"
-	vpc = "${cloudstack_vpc.foobar.name}"
-	zone = "${cloudstack_vpc.foobar.zone}"
+  name = "terraform-network"
+  cidr = "%s"
+  network_offering = "%s"
+  vpc = "${cloudstack_vpc.foobar.name}"
+  zone = "${cloudstack_vpc.foobar.zone}"
 }`,
 	CLOUDSTACK_VPC_CIDR_1,
 	CLOUDSTACK_VPC_OFFERING,

@@ -25,13 +25,10 @@ type StateChangeConf struct {
 	Delay          time.Duration    // Wait this time before starting checks
 	Pending        []string         // States that are "allowed" and will continue trying
 	Refresh        StateRefreshFunc // Refreshes the current state
-	Target         []string         // Target state
+	Target         string           // Target state
 	Timeout        time.Duration    // The amount of time to wait before timeout
 	MinTimeout     time.Duration    // Smallest time to wait before refreshes
 	NotFoundChecks int              // Number of times to allow not found
-
-	// This is to work around inconsistent APIs
-	ContinuousTargetOccurence int // Number of times the Target state has to occur continuously
 }
 
 // WaitForState watches an object and waits for it to achieve the state
@@ -52,15 +49,10 @@ func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 	log.Printf("[DEBUG] Waiting for state to become: %s", conf.Target)
 
 	notfoundTick := 0
-	targetOccurence := 0
 
 	// Set a default for times to check for not found
 	if conf.NotFoundChecks == 0 {
 		conf.NotFoundChecks = 20
-	}
-
-	if conf.ContinuousTargetOccurence == 0 {
-		conf.ContinuousTargetOccurence = 1
 	}
 
 	var result interface{}
@@ -95,13 +87,8 @@ func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 			}
 
 			// If we're waiting for the absence of a thing, then return
-			if result == nil && len(conf.Target) == 0 {
-				targetOccurence += 1
-				if conf.ContinuousTargetOccurence == targetOccurence {
-					return
-				} else {
-					continue
-				}
+			if result == nil && conf.Target == "" {
+				return
 			}
 
 			if result == nil {
@@ -115,24 +102,15 @@ func (conf *StateChangeConf) WaitForState() (interface{}, error) {
 			} else {
 				// Reset the counter for when a resource isn't found
 				notfoundTick = 0
-				found := false
 
-				for _, allowed := range conf.Target {
-					if currentState == allowed {
-						found = true
-						targetOccurence += 1
-						if conf.ContinuousTargetOccurence == targetOccurence {
-							return
-						} else {
-							continue
-						}
-					}
+				if currentState == conf.Target {
+					return
 				}
 
+				found := false
 				for _, allowed := range conf.Pending {
 					if currentState == allowed {
 						found = true
-						targetOccurence = 0
 						break
 					}
 				}

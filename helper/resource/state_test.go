@@ -25,91 +25,10 @@ func SuccessfulStateRefreshFunc() StateRefreshFunc {
 	}
 }
 
-type StateGenerator struct {
-	position      int
-	stateSequence []string
-}
-
-func (r *StateGenerator) NextState() (int, string, error) {
-	p, v := r.position, ""
-	if len(r.stateSequence)-1 >= p {
-		v = r.stateSequence[p]
-	} else {
-		return -1, "", errors.New("No more states available")
-	}
-
-	r.position += 1
-
-	return p, v, nil
-}
-
-func NewStateGenerator(sequence []string) *StateGenerator {
-	r := &StateGenerator{}
-	r.stateSequence = sequence
-
-	return r
-}
-
-func InconsistentStateRefreshFunc() StateRefreshFunc {
-	sequence := []string{
-		"done", "replicating",
-		"done", "done", "done",
-		"replicating",
-		"done", "done", "done",
-	}
-
-	r := NewStateGenerator(sequence)
-
-	return func() (interface{}, string, error) {
-		idx, s, err := r.NextState()
-		if err != nil {
-			return nil, "", err
-		}
-
-		return idx, s, nil
-	}
-}
-
-func TestWaitForState_inconsistent_positive(t *testing.T) {
-	conf := &StateChangeConf{
-		Pending:                   []string{"replicating"},
-		Target:                    []string{"done"},
-		Refresh:                   InconsistentStateRefreshFunc(),
-		Timeout:                   10 * time.Second,
-		ContinuousTargetOccurence: 3,
-	}
-
-	idx, err := conf.WaitForState()
-
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if idx != 4 {
-		t.Fatalf("Expected index 4, given %d", idx.(int))
-	}
-}
-
-func TestWaitForState_inconsistent_negative(t *testing.T) {
-	conf := &StateChangeConf{
-		Pending:                   []string{"replicating"},
-		Target:                    []string{"done"},
-		Refresh:                   InconsistentStateRefreshFunc(),
-		Timeout:                   10 * time.Second,
-		ContinuousTargetOccurence: 4,
-	}
-
-	_, err := conf.WaitForState()
-
-	if err == nil && err.Error() != "timeout while waiting for state to become 'done'" {
-		t.Fatalf("err: %s", err)
-	}
-}
-
 func TestWaitForState_timeout(t *testing.T) {
 	conf := &StateChangeConf{
 		Pending: []string{"pending", "incomplete"},
-		Target:  []string{"running"},
+		Target:  "running",
 		Refresh: TimeoutStateRefreshFunc(),
 		Timeout: 1 * time.Millisecond,
 	}
@@ -129,7 +48,7 @@ func TestWaitForState_timeout(t *testing.T) {
 func TestWaitForState_success(t *testing.T) {
 	conf := &StateChangeConf{
 		Pending: []string{"pending", "incomplete"},
-		Target:  []string{"running"},
+		Target:  "running",
 		Refresh: SuccessfulStateRefreshFunc(),
 		Timeout: 200 * time.Second,
 	}
@@ -146,7 +65,7 @@ func TestWaitForState_success(t *testing.T) {
 func TestWaitForState_successEmpty(t *testing.T) {
 	conf := &StateChangeConf{
 		Pending: []string{"pending", "incomplete"},
-		Target:  []string{},
+		Target:  "",
 		Refresh: func() (interface{}, string, error) {
 			return nil, "", nil
 		},
@@ -165,7 +84,7 @@ func TestWaitForState_successEmpty(t *testing.T) {
 func TestWaitForState_failure(t *testing.T) {
 	conf := &StateChangeConf{
 		Pending: []string{"pending", "incomplete"},
-		Target:  []string{"running"},
+		Target:  "running",
 		Refresh: FailedStateRefreshFunc(),
 		Timeout: 200 * time.Second,
 	}

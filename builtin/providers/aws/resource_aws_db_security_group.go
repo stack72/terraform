@@ -125,7 +125,7 @@ func resourceAwsDbSecurityGroupCreate(d *schema.ResourceData, meta interface{}) 
 
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{"authorizing"},
-		Target:  []string{"authorized"},
+		Target:  "authorized",
 		Refresh: resourceAwsDbSecurityGroupStateRefreshFunc(d, meta),
 		Timeout: 10 * time.Minute,
 	}

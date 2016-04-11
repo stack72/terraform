@@ -213,51 +213,54 @@ func testAccCheckAWSDBOptionGroupDestroy(s *terraform.State) error {
 
 const testAccAWSDBOptionGroupBasicConfig = `
 resource "aws_db_option_group" "bar" {
-  name                 = "option-group-test-terraform"
-  description          = "Test option group for terraform"
-  engine_name          = "mysql"
-  major_engine_version = "5.6"
-}`
+	name = "option-group-test-terraform"
+	option_group_description = "Test option group for terraform"
+	engine_name = "mysql"
+	major_engine_version = "5.6"
+}
+`
 
 const testAccAWSDBOptionGroupSqlServerEEOptions = `
 resource "aws_db_option_group" "bar" {
-  name                 = "option-group-test-terraform"
-  description          = "Test option group for terraform"
-  engine_name          = "sqlserver-ee"
-  major_engine_version = "11.00"
+	name = "option-group-test-terraform"
+	option_group_description = "Test option group for terraform"
+	engine_name = "sqlserver-ee"
+	major_engine_version = "11.00"
 
-  option {
-    option_name = "mirroring"
-  }
+	option {
+		option_name = "mirroring"
+	}
 
-  option {
-    option_name = "TDE"
-  }
-}`
+	option {
+		option_name = "TDE"
+	}
+}
+`
 
 const testAccAWSDBOptionGroupSqlServerEEOptions_update = `
 resource "aws_db_option_group" "bar" {
-  name                 = "option-group-test-terraform"
-  description          = "Test option group for terraform"
-  engine_name          = "sqlserver-ee"
-  major_engine_version = "11.00"
+	name = "option-group-test-terraform"
+	option_group_description = "Test option group for terraform"
+	engine_name = "sqlserver-ee"
+	major_engine_version = "11.00"
 
-  option {
-    option_name = "mirroring"
-  }
-}`
+	option {
+		option_name = "mirroring"
+	}
+}
+`
 
 const testAccAWSDBOptionGroupMySQLOptions = `
 resource "aws_db_option_group" "bar" {
-  name                 = "option-group-test-terraform"
-  description          = "Test option group for terraform"
-  engine_name          = "mysql"
-  major_engine_version = "5.6"
+	name = "option-group-test-terraform"
+	option_group_description = "Test option group for terraform"
+	engine_name = "mysql"
+	major_engine_version = "5.6"
 
-  option {
-    option_name                    = "MEMCACHED"
-    port                           = 11211
-    vpc_security_group_memberships = ["default"]
-  }
+	option {
+		option_name = "MEMCACHED"
+		port = 11211
+		vpc_security_group_memberships = ["default"]
+	}
 }
 `

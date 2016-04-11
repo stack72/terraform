@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 
@@ -87,7 +88,9 @@ func resourceNetworkingSubnetV2() *schema.Resource {
 				Optional: true,
 				ForceNew: false,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 			"host_routes": &schema.Schema{
 				Type:     schema.TypeList,
@@ -143,7 +146,7 @@ func resourceNetworkingSubnetV2Create(d *schema.ResourceData, meta interface{}) 
 
 	log.Printf("[DEBUG] Waiting for Subnet (%s) to become available", s.ID)
 	stateConf := &resource.StateChangeConf{
-		Target:     []string{"ACTIVE"},
+		Target:     "ACTIVE",
 		Refresh:    waitForSubnetActive(networkingClient, s.ID),
 		Timeout:    2 * time.Minute,
 		Delay:      5 * time.Second,
@@ -234,7 +237,7 @@ func resourceNetworkingSubnetV2Delete(d *schema.ResourceData, meta interface{}) 
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"ACTIVE"},
-		Target:     []string{"DELETED"},
+		Target:     "DELETED",
 		Refresh:    waitForSubnetDelete(networkingClient, d.Id()),
 		Timeout:    2 * time.Minute,
 		Delay:      5 * time.Second,

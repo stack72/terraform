@@ -35,7 +35,6 @@ Available commands are:
     remote     Configure remote state storage
     show       Inspect Terraform state or plan
     taint      Manually mark a resource for recreation
-    validate   Validates the Terraform files
     version    Prints the Terraform version
 ```
 

@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/mitchellh/go-homedir"
@@ -20,7 +19,6 @@ func resourceAwsS3BucketObject() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAwsS3BucketObjectPut,
 		Read:   resourceAwsS3BucketObjectRead,
-		Update: resourceAwsS3BucketObjectPut,
 		Delete: resourceAwsS3BucketObjectDelete,
 
 		Schema: map[string]*schema.Schema{
@@ -33,26 +31,31 @@ func resourceAwsS3BucketObject() *schema.Resource {
 			"cache_control": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"content_disposition": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"content_encoding": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"content_language": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 
 			"content_type": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				Computed: true,
 			},
 
@@ -65,25 +68,18 @@ func resourceAwsS3BucketObject() *schema.Resource {
 			"source": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
+				ForceNew:      true,
 				ConflictsWith: []string{"content"},
 			},
 
 			"content": &schema.Schema{
 				Type:          schema.TypeString,
 				Optional:      true,
+				ForceNew:      true,
 				ConflictsWith: []string{"source"},
 			},
 
 			"etag": &schema.Schema{
-				Type: schema.TypeString,
-				// This will conflict with SSE-C and SSE-KMS encryption and multi-part upload
-				// if/when it's actually implemented. The Etag then won't match raw-file MD5.
-				// See http://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonResponseHeaders.html
-				Optional: true,
-				Computed: true,
-			},
-
-			"version_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -114,9 +110,9 @@ func resourceAwsS3BucketObjectPut(d *schema.ResourceData, meta interface{}) erro
 		content := v.(string)
 		body = bytes.NewReader([]byte(content))
 	} else {
+
 		return fmt.Errorf("Must specify \"source\" or \"content\" field")
 	}
-
 	putInput := &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -148,12 +144,9 @@ func resourceAwsS3BucketObjectPut(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error putting object in S3 bucket (%s): %s", bucket, err)
 	}
 
-	// See https://forums.aws.amazon.com/thread.jspa?threadID=44003
-	d.Set("etag", strings.Trim(*resp.ETag, `"`))
-
-	d.Set("version_id", resp.VersionId)
+	d.Set("etag", resp.ETag)
 	d.SetId(key)
-	return resourceAwsS3BucketObjectRead(d, meta)
+	return nil
 }
 
 func resourceAwsS3BucketObjectRead(d *schema.ResourceData, meta interface{}) error {
@@ -185,7 +178,6 @@ func resourceAwsS3BucketObjectRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("content_encoding", resp.ContentEncoding)
 	d.Set("content_language", resp.ContentLanguage)
 	d.Set("content_type", resp.ContentType)
-	d.Set("version_id", resp.VersionId)
 
 	log.Printf("[DEBUG] Reading S3 Bucket Object meta: %s", resp)
 	return nil
@@ -197,40 +189,13 @@ func resourceAwsS3BucketObjectDelete(d *schema.ResourceData, meta interface{}) e
 	bucket := d.Get("bucket").(string)
 	key := d.Get("key").(string)
 
-	if _, ok := d.GetOk("version_id"); ok {
-		// Bucket is versioned, we need to delete all versions
-		vInput := s3.ListObjectVersionsInput{
-			Bucket: aws.String(bucket),
-			Prefix: aws.String(key),
-		}
-		out, err := s3conn.ListObjectVersions(&vInput)
-		if err != nil {
-			return fmt.Errorf("Failed listing S3 object versions: %s", err)
-		}
-
-		for _, v := range out.Versions {
-			input := s3.DeleteObjectInput{
-				Bucket:    aws.String(bucket),
-				Key:       aws.String(key),
-				VersionId: v.VersionId,
-			}
-			_, err := s3conn.DeleteObject(&input)
-			if err != nil {
-				return fmt.Errorf("Error deleting S3 object version of %s:\n %s:\n %s",
-					key, v, err)
-			}
-		}
-	} else {
-		// Just delete the object
-		input := s3.DeleteObjectInput{
+	_, err := s3conn.DeleteObject(
+		&s3.DeleteObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
-		}
-		_, err := s3conn.DeleteObject(&input)
-		if err != nil {
-			return fmt.Errorf("Error deleting S3 bucket object: %s", err)
-		}
+		})
+	if err != nil {
+		return fmt.Errorf("Error deleting S3 bucket object: %s", err)
 	}
-
 	return nil
 }

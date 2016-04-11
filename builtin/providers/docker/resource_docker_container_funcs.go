@@ -162,16 +162,13 @@ func resourceDockerContainerCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOk("networks"); ok {
 		connectionOpts := dc.NetworkConnectionOptions{Container: retContainer.ID}
 
-		for _, rawNetwork := range v.(*schema.Set).List() {
-			network := rawNetwork.(string)
-			if err := client.ConnectNetwork(network, connectionOpts); err != nil {
-				return fmt.Errorf("Unable to connect to network '%s': %s", network, err)
-			}
+		for _, network := range v.(*schema.Set).List() {
+			client.ConnectNetwork(network.(string), connectionOpts)
 		}
 	}
 
 	creationTime = time.Now()
-	if err := client.StartContainer(retContainer.ID, nil); err != nil {
+	if err := client.StartContainer(retContainer.ID, hostConfig); err != nil {
 		return fmt.Errorf("Unable to start container: %s", err)
 	}
 

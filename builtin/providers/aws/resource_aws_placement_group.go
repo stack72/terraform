@@ -49,7 +49,7 @@ func resourceAwsPlacementGroupCreate(d *schema.ResourceData, meta interface{}) e
 
 	wait := resource.StateChangeConf{
 		Pending:    []string{"pending"},
-		Target:     []string{"available"},
+		Target:     "available",
 		Timeout:    5 * time.Minute,
 		MinTimeout: 1 * time.Second,
 		Refresh: func() (interface{}, string, error) {
@@ -114,7 +114,7 @@ func resourceAwsPlacementGroupDelete(d *schema.ResourceData, meta interface{}) e
 
 	wait := resource.StateChangeConf{
 		Pending:    []string{"deleting"},
-		Target:     []string{"deleted"},
+		Target:     "deleted",
 		Timeout:    5 * time.Minute,
 		MinTimeout: 1 * time.Second,
 		Refresh: func() (interface{}, string, error) {

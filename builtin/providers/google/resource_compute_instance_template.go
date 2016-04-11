@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
@@ -137,13 +138,7 @@ func resourceComputeInstanceTemplate() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"network": &schema.Schema{
 							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-						},
-
-						"subnetwork": &schema.Schema{
-							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 							ForceNew: true,
 						},
 
@@ -177,12 +172,6 @@ func resourceComputeInstanceTemplate() *schema.Resource {
 				Optional:   true,
 				ForceNew:   true,
 				Deprecated: "Please use `scheduling.on_host_maintenance` instead",
-			},
-
-			"region": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 
 			"scheduling": &schema.Schema{
@@ -245,7 +234,9 @@ func resourceComputeInstanceTemplate() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 
 			"metadata_fingerprint": &schema.Schema{
@@ -339,58 +330,19 @@ func buildDisks(d *schema.ResourceData, meta interface{}) ([]*compute.AttachedDi
 
 func buildNetworks(d *schema.ResourceData, meta interface{}) (error, []*compute.NetworkInterface) {
 	// Build up the list of networks
-	config := meta.(*Config)
-
 	networksCount := d.Get("network_interface.#").(int)
 	networkInterfaces := make([]*compute.NetworkInterface, 0, networksCount)
 	for i := 0; i < networksCount; i++ {
 		prefix := fmt.Sprintf("network_interface.%d", i)
 
-		var networkName, subnetworkName string
+		source := "global/networks/"
 		if v, ok := d.GetOk(prefix + ".network"); ok {
-			networkName = v.(string)
-		}
-		if v, ok := d.GetOk(prefix + ".subnetwork"); ok {
-			subnetworkName = v.(string)
-		}
-
-		if networkName == "" && subnetworkName == "" {
-			return fmt.Errorf("network or subnetwork must be provided"), nil
-		}
-		if networkName != "" && subnetworkName != "" {
-			return fmt.Errorf("network or subnetwork must not both be provided"), nil
-		}
-
-		var networkLink, subnetworkLink string
-		if networkName != "" {
-			network, err := config.clientCompute.Networks.Get(
-				config.Project, networkName).Do()
-			if err != nil {
-				return fmt.Errorf(
-					"Error referencing network '%s': %s",
-					networkName, err), nil
-			}
-			networkLink = network.SelfLink
-		} else {
-			// lookup subnetwork link using region and subnetwork name
-			region := d.Get("region").(string)
-			if region == "" {
-				region = config.Region
-			}
-			subnetwork, err := config.clientCompute.Subnetworks.Get(
-				config.Project, region, subnetworkName).Do()
-			if err != nil {
-				return fmt.Errorf(
-					"Error referencing subnetwork '%s' in region '%s': %s",
-					subnetworkName, region, err), nil
-			}
-			subnetworkLink = subnetwork.SelfLink
+			source += v.(string)
 		}
 
 		// Build the networkInterface
 		var iface compute.NetworkInterface
-		iface.Network = networkLink
-		iface.Subnetwork = subnetworkLink
+		iface.Network = source
 
 		accessConfigsCount := d.Get(prefix + ".access_config.#").(int)
 		iface.AccessConfigs = make([]*compute.AccessConfig, accessConfigsCount)

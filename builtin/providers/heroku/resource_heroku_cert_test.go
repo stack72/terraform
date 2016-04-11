@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/cyberdelia/heroku-go/v3"
-	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -18,10 +17,9 @@ func TestAccHerokuCert_Basic(t *testing.T) {
 	certificateChainFile := wd + "/test-fixtures/terraform.cert"
 	certificateChainBytes, _ := ioutil.ReadFile(certificateChainFile)
 	certificateChain := string(certificateChainBytes)
-	appName := fmt.Sprintf("tftest-%s", acctest.RandString(10))
 	testAccCheckHerokuCertConfig_basic := `
     resource "heroku_app" "foobar" {
-        name = "` + appName + `"
+        name = "terraform-test-cert-app"
         region = "eu"
     }
 
@@ -49,8 +47,7 @@ func TestAccHerokuCert_Basic(t *testing.T) {
 					testAccCheckHerokuCertExists("heroku_cert.ssl_certificate", &endpoint),
 					testAccCheckHerokuCertificateChain(&endpoint, certificateChain),
 					resource.TestCheckResourceAttr(
-						"heroku_cert.ssl_certificate",
-						"cname", fmt.Sprintf("%s.herokuapp.com", appName)),
+						"heroku_cert.ssl_certificate", "cname", "terraform-test-cert-app.herokuapp.com"),
 				),
 			},
 		},

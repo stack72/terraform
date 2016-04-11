@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack/networking/v2/extensions/fwaas/policies"
@@ -52,7 +53,9 @@ func resourceFWPolicyV1() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
+				Set: func(v interface{}) int {
+					return hashcode.String(v.(string))
+				},
 			},
 		},
 	}

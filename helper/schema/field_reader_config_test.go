@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/hil/ast"
 	"github.com/hashicorp/terraform/config"
+	"github.com/hashicorp/terraform/config/lang/ast"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -212,7 +213,9 @@ func TestConfigFieldReader_ComputedSet(t *testing.T) {
 		"strSet": &Schema{
 			Type: TypeSet,
 			Elem: &Schema{Type: TypeString},
-			Set:  HashString,
+			Set: func(v interface{}) int {
+				return hashcode.String(v.(string))
+			},
 		},
 	}
 

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/hashicorp/hil/ast"
+	"github.com/hashicorp/terraform/config/lang/ast"
 	"github.com/mitchellh/reflectwalk"
 )
 
@@ -18,9 +18,7 @@ func TestInterpolationWalker_detect(t *testing.T) {
 			Input: map[string]interface{}{
 				"foo": "$${var.foo}",
 			},
-			Result: []string{
-				"Literal(TypeString, ${var.foo})",
-			},
+			Result: nil,
 		},
 
 		{
@@ -116,7 +114,7 @@ func TestInterpolationWalker_replace(t *testing.T) {
 				"foo": "$${var.foo}",
 			},
 			Output: map[string]interface{}{
-				"foo": "bar",
+				"foo": "$${var.foo}",
 			},
 			Value: "bar",
 		},

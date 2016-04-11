@@ -195,8 +195,8 @@ func (t *MissingProviderTransformer) Transform(g *Graph) error {
 				continue
 			}
 
-			// Add the missing provider node to the graph
-			m[p] = g.Add(&graphNodeProvider{ProviderNameValue: p})
+			// Add our own missing provider node to the graph
+			m[p] = g.Add(&graphNodeMissingProvider{ProviderNameValue: p})
 		}
 	}
 
@@ -394,34 +394,34 @@ func (n *graphNodeCloseProvider) DotNode(name string, opts *GraphDotOpts) *dot.N
 	})
 }
 
-type graphNodeProvider struct {
+type graphNodeMissingProvider struct {
 	ProviderNameValue string
 }
 
-func (n *graphNodeProvider) Name() string {
+func (n *graphNodeMissingProvider) Name() string {
 	return fmt.Sprintf("provider.%s", n.ProviderNameValue)
 }
 
 // GraphNodeEvalable impl.
-func (n *graphNodeProvider) EvalTree() EvalNode {
+func (n *graphNodeMissingProvider) EvalTree() EvalNode {
 	return ProviderEvalTree(n.ProviderNameValue, nil)
 }
 
 // GraphNodeDependable impl.
-func (n *graphNodeProvider) DependableName() []string {
+func (n *graphNodeMissingProvider) DependableName() []string {
 	return []string{n.Name()}
 }
 
-func (n *graphNodeProvider) ProviderName() string {
+func (n *graphNodeMissingProvider) ProviderName() string {
 	return n.ProviderNameValue
 }
 
-func (n *graphNodeProvider) ProviderConfig() *config.RawConfig {
+func (n *graphNodeMissingProvider) ProviderConfig() *config.RawConfig {
 	return nil
 }
 
 // GraphNodeDotter impl.
-func (n *graphNodeProvider) DotNode(name string, opts *GraphDotOpts) *dot.Node {
+func (n *graphNodeMissingProvider) DotNode(name string, opts *GraphDotOpts) *dot.Node {
 	return dot.NewNode(name, map[string]string{
 		"label": n.Name(),
 		"shape": "diamond",
@@ -429,46 +429,46 @@ func (n *graphNodeProvider) DotNode(name string, opts *GraphDotOpts) *dot.Node {
 }
 
 // GraphNodeDotterOrigin impl.
-func (n *graphNodeProvider) DotOrigin() bool {
+func (n *graphNodeMissingProvider) DotOrigin() bool {
 	return true
 }
 
 // GraphNodeFlattenable impl.
-func (n *graphNodeProvider) Flatten(p []string) (dag.Vertex, error) {
-	return &graphNodeProviderFlat{
-		graphNodeProvider: n,
-		PathValue:         p,
+func (n *graphNodeMissingProvider) Flatten(p []string) (dag.Vertex, error) {
+	return &graphNodeMissingProviderFlat{
+		graphNodeMissingProvider: n,
+		PathValue:                p,
 	}, nil
 }
 
 // Same as graphNodeMissingProvider, but for flattening
-type graphNodeProviderFlat struct {
-	*graphNodeProvider
+type graphNodeMissingProviderFlat struct {
+	*graphNodeMissingProvider
 
 	PathValue []string
 }
 
-func (n *graphNodeProviderFlat) Name() string {
+func (n *graphNodeMissingProviderFlat) Name() string {
 	return fmt.Sprintf(
-		"%s.%s", modulePrefixStr(n.PathValue), n.graphNodeProvider.Name())
+		"%s.%s", modulePrefixStr(n.PathValue), n.graphNodeMissingProvider.Name())
 }
 
-func (n *graphNodeProviderFlat) Path() []string {
+func (n *graphNodeMissingProviderFlat) Path() []string {
 	return n.PathValue
 }
 
-func (n *graphNodeProviderFlat) ProviderName() string {
+func (n *graphNodeMissingProviderFlat) ProviderName() string {
 	return fmt.Sprintf(
 		"%s.%s", modulePrefixStr(n.PathValue),
-		n.graphNodeProvider.ProviderName())
+		n.graphNodeMissingProvider.ProviderName())
 }
 
 // GraphNodeDependable impl.
-func (n *graphNodeProviderFlat) DependableName() []string {
+func (n *graphNodeMissingProviderFlat) DependableName() []string {
 	return []string{n.Name()}
 }
 
-func (n *graphNodeProviderFlat) DependentOn() []string {
+func (n *graphNodeMissingProviderFlat) DependentOn() []string {
 	var result []string
 
 	// If we're in a module, then depend on our parent's provider
@@ -480,7 +480,7 @@ func (n *graphNodeProviderFlat) DependentOn() []string {
 
 		result = append(result, fmt.Sprintf(
 			"%s%s",
-			prefix, n.graphNodeProvider.Name()))
+			prefix, n.graphNodeMissingProvider.Name()))
 	}
 
 	return result

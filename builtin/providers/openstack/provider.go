@@ -47,14 +47,14 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: envDefaultFuncAllowMissing("OS_AUTH_TOKEN"),
 			},
 			"domain_id": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: envDefaultFuncAllowMissing("OS_DOMAIN_ID"),
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "",
 			},
 			"domain_name": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: envDefaultFuncAllowMissing("OS_DOMAIN_NAME"),
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "",
 			},
 			"insecure": &schema.Schema{
 				Type:     schema.TypeBool,
@@ -65,11 +65,6 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: envDefaultFuncAllowMissing("OS_ENDPOINT_TYPE"),
-			},
-			"cacert_file": &schema.Schema{
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: envDefaultFuncAllowMissing("OS_CACERT"),
 			},
 		},
 
@@ -83,7 +78,6 @@ func Provider() terraform.ResourceProvider {
 			"openstack_fw_firewall_v1":                 resourceFWFirewallV1(),
 			"openstack_fw_policy_v1":                   resourceFWPolicyV1(),
 			"openstack_fw_rule_v1":                     resourceFWRuleV1(),
-			"openstack_lb_member_v1":                   resourceLBMemberV1(),
 			"openstack_lb_monitor_v1":                  resourceLBMonitorV1(),
 			"openstack_lb_pool_v1":                     resourceLBPoolV1(),
 			"openstack_lb_vip_v1":                      resourceLBVipV1(),
@@ -113,7 +107,6 @@ func configureProvider(d *schema.ResourceData) (interface{}, error) {
 		DomainName:       d.Get("domain_name").(string),
 		Insecure:         d.Get("insecure").(bool),
 		EndpointType:     d.Get("endpoint_type").(string),
-		CACertFile:       d.Get("cacert_file").(string),
 	}
 
 	if err := config.loadAndValidate(); err != nil {

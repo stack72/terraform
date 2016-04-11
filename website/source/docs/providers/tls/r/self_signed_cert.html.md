@@ -62,9 +62,8 @@ The following arguments are supported:
   an irreversable secure hash of the private key will be stored in the Terraform
   state.
 
-* `subject` - (Required) The subject for which a certificate is being requested.
-  This is a nested configuration block whose structure matches the
-  corresponding block for [`tls_cert_request`](cert_request.html).
+* `subject` - (Required) The subject for which a certificate is being requested. This is
+  a nested configuration block whose structure is described below.
 
 * `validity_period_hours` - (Required) The number of hours after initial issuing that the
   certificate will become invalid.

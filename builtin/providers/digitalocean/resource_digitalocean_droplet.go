@@ -418,7 +418,7 @@ func WaitForDropletAttribute(
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    pending,
-		Target:     []string{target},
+		Target:     target,
 		Refresh:    newDropletStateRefreshFunc(d, attribute, meta),
 		Timeout:    60 * time.Minute,
 		Delay:      10 * time.Second,
