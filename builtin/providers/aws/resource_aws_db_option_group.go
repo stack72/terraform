@@ -41,12 +41,11 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"option_group_description": &schema.Schema{
+			"description": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"option": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -56,23 +55,41 @@ func resourceAwsDbOptionGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-
+						"option_settings": &schema.Schema{
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": &schema.Schema{
+										Type:     schema.TypeString,
+										Required: true,
+										ForceNew: true,
+									},
+									"value": &schema.Schema{
+										Type:     schema.TypeString,
+										Required: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+						"apply_immediately": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"port": &schema.Schema{
 							Type:     schema.TypeInt,
 							Optional: true,
-							Computed: true,
 						},
 						"db_security_group_memberships": &schema.Schema{
 							Type:     schema.TypeSet,
 							Optional: true,
-							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
 						"vpc_security_group_memberships": &schema.Schema{
 							Type:     schema.TypeSet,
 							Optional: true,
-							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 							Set:      schema.HashString,
 						},
@@ -93,7 +110,7 @@ func resourceAwsDbOptionGroupCreate(d *schema.ResourceData, meta interface{}) er
 	createOpts := &rds.CreateOptionGroupInput{
 		EngineName:             aws.String(d.Get("engine_name").(string)),
 		MajorEngineVersion:     aws.String(d.Get("major_engine_version").(string)),
-		OptionGroupDescription: aws.String(d.Get("option_group_description").(string)),
+		OptionGroupDescription: aws.String(d.Get("description").(string)),
 		OptionGroupName:        aws.String(d.Get("name").(string)),
 		Tags:                   tags,
 	}
@@ -131,19 +148,21 @@ func resourceAwsDbOptionGroupRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if option == nil {
-		return fmt.Errorf("Unable to find Option Group: %#v", options.OptionGroupsList)
+		log.Printf("Unable to find Option Group: %#v", options.OptionGroupsList)
+		d.SetId("")
+		return nil
 	}
 
-	d.Set("major_engine_version", options.OptionGroupsList[0].MajorEngineVersion)
-	d.Set("engine_name", options.OptionGroupsList[0].EngineName)
-	d.Set("option_group_description", options.OptionGroupsList[0].OptionGroupDescription)
+	d.Set("major_engine_version", option.MajorEngineVersion)
+	d.Set("engine_name", option.EngineName)
+	d.Set("description", option.OptionGroupDescription)
+	d.Set("option", flattenOptions(option.Options))
 
-	optionGroup := options.OptionGroupsList[0]
 	arn, err := buildRDSOptionGroupARN(d, meta)
 	if err != nil {
 		name := "<empty>"
-		if optionGroup.OptionGroupName != nil && *optionGroup.OptionGroupName != "" {
-			name = *optionGroup.OptionGroupName
+		if option.OptionGroupName != nil && *option.OptionGroupName != "" {
+			name = *option.OptionGroupName
 		}
 		log.Printf("[DEBUG] Error building ARN for DB Option Group, not setting Tags for Option Group %s", name)
 	} else {
@@ -168,6 +187,7 @@ func resourceAwsDbOptionGroupRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAwsDbOptionGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	rdsconn := meta.(*AWSClient).rdsconn
+
 	if d.HasChange("option") {
 		o, n := d.GetChange("option")
 		if o == nil {
@@ -251,6 +271,20 @@ func resourceAwsDbOptionHash(v interface{}) int {
 	m := v.(map[string]interface{})
 	buf.WriteString(fmt.Sprintf("%s-", m["option_name"].(string)))
 	buf.WriteString(fmt.Sprintf("%d-", m["port"].(int)))
+
+	for _, oRaw := range m["option_settings"].(*schema.Set).List() {
+		o := oRaw.(map[string]interface{})
+		buf.WriteString(fmt.Sprintf("%s-", o["name"].(string)))
+		buf.WriteString(fmt.Sprintf("%s-", o["value"].(string)))
+	}
+
+	for _, vpcRaw := range m["vpc_security_group_memberships"].(*schema.Set).List() {
+		buf.WriteString(fmt.Sprintf("%s-", vpcRaw.(string)))
+	}
+
+	for _, sgRaw := range m["db_security_group_memberships"].(*schema.Set).List() {
+		buf.WriteString(fmt.Sprintf("%s-", sgRaw.(string)))
+	}
 
 	return hashcode.String(buf.String())
 }
